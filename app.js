@@ -7,8 +7,8 @@ async function a() {
     let bla = await testService.getSomeFromCache();
     let blo = await testManager.upperCaseRecord();
 
-    console.log(bla);
-    console.log(blo);
+    console.log('Should be lowercase: ', bla);
+    console.log('Should be uppercase: ', blo);
 }
 
 a();
