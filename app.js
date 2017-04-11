@@ -8,6 +8,7 @@ async function a() {
     let blo = await testManager.upperCaseRecord();
 
     console.log(bla);
+    console.log(blo);
 }
 
 a();
