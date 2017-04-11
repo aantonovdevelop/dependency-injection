@@ -1,0 +1,19 @@
+{
+  "name": "dependency-injection",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Artem Antonov <aantonov.develop@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "mongoose": "^4.9.4",
+    "redis": "^2.7.1",
+    "then-redis": "^2.0.1"
+  },
+  "devDependencies": {
+    "mocha": "^3.2.0"
+  }
+}
