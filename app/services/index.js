@@ -8,6 +8,14 @@ module.exports = [{
             arguments: []
         }
     }],
+    services: [{
+        name: 'test-service-2'
+    }],
+    managers: [],
+    others: []
+}, {
+    name: 'test-service-2',
+    packages: [],
     services: [],
     managers: [],
     others: []

@@ -9,6 +9,8 @@ async function a() {
 
     console.log('Should be lowercase: ', bla);
     console.log('Should be uppercase: ', blo);
+
+    console.log('Should be yes: ', await testService.callTest2Service());
 }
 
 a();
