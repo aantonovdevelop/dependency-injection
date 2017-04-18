@@ -3,6 +3,7 @@
 const assert = require('assert');
 
 const config = {
+    packagesPath: `${__dirname}/../node_modules/`,
     services: [{
         name: 'test-service',
         packages: [{

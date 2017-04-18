@@ -1,6 +1,13 @@
+"use strict";
+
+const path = require('path');
+
 module.exports = function (config) {
-    let servicesConfig = config && config.services || require('./app/services'),
-        managersConfig = config && config.managers || require('./app/managers');
+    let servicesPath = config.servicesPath || './app/services',
+        managersPath = config.managersPath || './app/managers',
+        packagesPath = config.packagesPath || `${path.dirname(require.main.filename)}/node_modules/`,
+        servicesConfig = config && config.services || require(servicesPath),
+        managersConfig = config && config.managers || require(managersPath);
 
     let servicesBlueprintsTable = {},
         managersBlueprintsTable = {};
@@ -22,12 +29,18 @@ module.exports = function (config) {
     };
 
     function instantiatePackage(config) {
-        let pkg = require(config.name);
+        let pkg = config.native 
+            ? require(config.name)
+            : require(`${packagesPath}${config.name}`);
 
         if (config.mock) {
             return config.mock;
         } else {
-            return pkg[config.callFunction.name].call(...config.callFunction.arguments);
+            if (config.callFunction) {
+                return pkg[config.callFunction.name].call(...config.callFunction.arguments);
+            } else {
+                return pkg;
+            }
         }
     }
 
@@ -45,7 +58,7 @@ module.exports = function (config) {
             if (d.mock) {
                 service = d.mock;
             } else if (!services[convertFileNameToFieldName(d.name)]) {
-                service = require('./app/services/' + blueprint.name);
+                service = require(`${servicesPath}/${blueprint.name}`);
 
                 if (d.deployType === 'new') {
                     let packages = [];
@@ -77,7 +90,7 @@ module.exports = function (config) {
         let instantiatedManagers = {};
 
         for (const blueprint of blueprints) {
-            let manager = require('./app/managers/' + blueprint.name)();
+            let manager = require(`${managersPath}/${blueprint.name}`)();
 
             instantiateServices(manager, blueprint.services, services);
 

@@ -1,3 +1,5 @@
+"use strict";
+
 class TestManager {
     async upperCaseRecord() {
         let str = await this.testService.getSomeFromCache();

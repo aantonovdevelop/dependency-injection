@@ -4,6 +4,7 @@ const assert = require('assert');
 const injector = require('../injector');
 
 const config = {
+    packagesPath: `${__dirname}/../node_modules/`,
     managers: [{
         name: 'test-manager',
         services: [{
