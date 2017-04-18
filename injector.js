@@ -13,7 +13,7 @@ module.exports = function (config) {
         managersBlueprintsTable[blueprint.name] = blueprint;
     });
 
-    let instantiatedServices = {};
+    let instantiatedServices = instantiateServices({}, servicesConfig);
     let instantiatedManagers = instantiateManagers(managersConfig, instantiatedServices);
 
     return {
@@ -21,17 +21,46 @@ module.exports = function (config) {
         instantiatedManagers
     };
 
-    function instantiateServices(instance, dependencies, services) {
-        dependencies.forEach(d => {
+    function instantiatePackage(config) {
+        let pkg = require(config.name);
+
+        if (config.mock) {
+            return config.mock;
+        } else {
+            return pkg[config.callFunction.name].call(...config.callFunction.arguments);
+        }
+    }
+
+    function instantiatePackages(instance, dependencies) {
+        for (const packageConfig of dependencies) {
+            instance[convertFileNameToFieldName(packageConfig.instanceName || packageConfig.name)] = instantiatePackage(packageConfig);
+        }
+    }
+
+    function instantiateServices(instance, dependencies, services = {}) {
+        for (const d of dependencies) {
             let service = null,
                 blueprint = servicesBlueprintsTable[d.name];
 
             if (d.mock) {
                 service = d.mock;
             } else if (!services[convertFileNameToFieldName(d.name)]) {
-                service = require('./app/services/' + blueprint.name)();
+                service = require('./app/services/' + blueprint.name);
 
-                instantiatePackages(service, blueprint.packages);
+                if (d.deployType === 'new') {
+                    let packages = [];
+
+                    blueprint.packages.forEach(p => {
+                        packages.push(instantiatePackage(p));
+                    });
+
+                    service = new service(...packages);
+                } else {
+                    service = service();
+
+                    instantiatePackages(service, blueprint.packages);
+                }
+
                 instantiateServices(service, blueprint.services || [], services);
             } else {
                 service = services[convertFileNameToFieldName(d.name)];
@@ -39,7 +68,9 @@ module.exports = function (config) {
 
             instance[convertFileNameToFieldName(blueprint.name)] = service;
             services[convertFileNameToFieldName(blueprint.name)] = service;
-        });
+        }
+
+        return services;
     }
 
     function instantiateManagers(blueprints, services) {
@@ -56,21 +87,6 @@ module.exports = function (config) {
         return instantiatedManagers;
     }
 };
-
-function instantiatePackages(instance, dependencies) {
-    for (const packageConfig of dependencies) {
-        let pkg = require(packageConfig.name);
-
-        if (packageConfig.mock) {
-            instance[packageConfig.name] = packageConfig.mock;
-            continue;
-        }
-
-        if (packageConfig.callFunction) {
-            instance[convertFileNameToFieldName(packageConfig.instanceName || packageConfig.name)] = pkg[packageConfig.callFunction.name].call(...packageConfig.callFunction.arguments);
-        }
-    }
-}
 
 function convertFileNameToFieldName(name) {
     let result = '';

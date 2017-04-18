@@ -19,4 +19,15 @@ module.exports = [{
     services: [],
     managers: [],
     others: []
+}, {
+    name: 'test-service-new',
+    deployType: 'new',
+    packages: [{
+        name: 'then-redis',
+        instanceName: 'redis',
+        callFunction: {
+            name: 'createClient',
+            arguments: []
+        }
+    }]
 }];
