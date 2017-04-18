@@ -21,8 +21,21 @@ module.exports = function (config) {
         managersBlueprintsTable[blueprint.name] = blueprint;
     });
 
-    let instantiatedServices = instantiateServices({}, servicesConfig);
-    let instantiatedManagers = instantiateManagers(managersConfig, instantiatedServices);
+    let instantiatedDependencies = {
+        services: {
+            __path: servicesPath
+        },
+
+        managers: {
+            __path: managersPath
+        }
+    };
+
+    let instantiatedServices = {},
+        instantiatedManagers = {};
+
+    instantiatedServices = instantiateServices({}, servicesConfig);
+    instantiatedManagers = instantiateManagers({}, managersConfig);
 
     return {
         instantiatedServices,
@@ -53,86 +66,77 @@ module.exports = function (config) {
         }
     }
 
-    function instantiateService(config, services) {
-        console.log(`Instantiate service ${config.name}`);
-
-        let service = null;
+    function instantiateDependency(config, type) {
+        console.log(`Instantiate dependency ${type} ${config.name}`);
 
         if (config.mock) {
-            service = config.mock;
-        } else if (!services[convertFileNameToFieldName(config.name)]) {
-            service = require(`${servicesPath}/${config.name}`);
-
-            if (config.deployType === 'new') {
-                let packages = [];
-
-                config.packages.forEach(p => {
-                    packages.push(instantiatePackage(p));
-                });
-
-                service = new service(...packages);
-            } else {
-                service = service();
-
-                instantiatePackages(service, config.packages);
-            }
-
-            instantiateServices(service, config.services || [], services);
-        } else {
-            service = services[convertFileNameToFieldName(config.name)];
+            return config.mock;
         }
 
-        return service;
+        if (instantiatedDependencies[type][convertFileNameToFieldName(config.name)]) {
+            return instantiatedDependencies[type][convertFileNameToFieldName(config.name)];
+        }
+
+        let dependency = require(`${instantiatedDependencies[type].__path}/${config.name}`);
+
+        if (config.deployType === 'new') {
+            let dependencies = [];
+
+            (config.managers || []).forEach(m => {
+                dependencies.push(instantiateDependency(m, 'managers'));
+            });
+
+            (config.services || []).forEach(s => {
+                dependencies.push(instantiateDependency(s, 'services'));
+            });
+
+            (config.packages || []).forEach(p => {
+                dependencies.push(instantiatePackage(p));
+            });
+
+            dependency = new dependency(...dependencies);
+
+            instantiatedDependencies[type][convertFileNameToFieldName(config.name)] = dependency;
+        } else {
+            dependency = dependency();
+
+            instantiatePackages(dependency, config.packages || []);
+            instantiateServices(dependency, config.services || [], instantiatedDependencies['services']);
+            instantiateManagers(dependency, config.managers || [], instantiatedDependencies['managers']);
+        }
+
+        return dependency;
     }
 
-    function instantiateServices(instance, dependencies, services = {}) {
+    function instantiateServices(instance, dependencies) {
         for (const d of dependencies) {
             let service = null,
                 blueprint = servicesBlueprintsTable[d.name];
 
             blueprint.mock = d.mock;
 
-            service = instantiateService(blueprint, services);
+            service = instantiateDependency(blueprint, 'services');
 
-            instance[convertFileNameToFieldName(blueprint.name)] = service;
-            services[convertFileNameToFieldName(blueprint.name)] = service;
+            instantiatedServices[convertFileNameToFieldName(d.name)] = service;
+
+            if (instance) instance[convertFileNameToFieldName(d.name)] = service;
         }
 
-        return services;
+        return instantiatedServices;
     }
 
-    function instantiateManagers(blueprints, services) {
+    function instantiateManagers(instance, dependencies) {
+        for (const d of dependencies) {
+            let manager = null,
+                blueprint = managersBlueprintsTable[d.name];
 
-        let instantiatedManagers = {};
+            blueprint.mock = d.mock;
 
-        for (const blueprint of blueprints) {
-            console.log(`Instantiate manager ${blueprint.name}`);
+            manager = instantiateDependency(blueprint, 'managers');
 
-            let manager = require(`${managersPath}/${blueprint.name}`);
+            instantiatedManagers[convertFileNameToFieldName(d.name)] = manager;
 
-            if (blueprint.deployType === 'new') {
-                let dependencies = [];
-
-                for (let config of blueprint.services) {
-                    let service = instantiateService(config, services);
-
-                    dependencies.push(service);
-                }
-
-                for (let config of blueprint.packages) {
-                    let pkg = instantiatePackage(config)
-
-                    dependencies.push(pkg);
-                }
-
-                manager = new manager(...dependencies);
-            } else {
-                manager = manager();
-
-                instantiateServices(manager, blueprint.services, services);
-            }
-
-            instantiatedManagers[convertFileNameToFieldName(blueprint.name)] = manager;
+            if (instance) instance[convertFileNameToFieldName(d.name)] = manager;
         }
 
         return instantiatedManagers;
