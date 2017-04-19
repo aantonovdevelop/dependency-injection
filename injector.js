@@ -3,15 +3,18 @@
 const path = require('path');
 
 module.exports = function (config) {
-    let servicesPath = config.servicesPath || './app/services',
-        managersPath = config.managersPath || './app/managers',
+    let servicesPath = config.servicesPath,
+        managersPath = config.managersPath,
+        controllersPath = config.controllersPath,
         packagesPath = config.packagesPath || `${path.dirname(require.main.filename)}/node_modules/`,
 
-        servicesConfig = config && config.services || require(servicesPath),
-        managersConfig = config && config.managers || require(managersPath),
+        servicesConfig = config && config.services || (servicesPath ? require(servicesPath) : []),
+        managersConfig = config && config.managers || (managersPath ? require(managersPath) : []),
+        controllersConfig = config && config.controllers || (controllersPath ? require(controllersPath) : []),
 
         servicesBlueprintsTable = {},
-        managersBlueprintsTable = {};
+        managersBlueprintsTable = {},
+        controllersBlueprintsTable = {};
 
     servicesConfig.forEach(blueprint => {
         servicesBlueprintsTable[blueprint.name] = blueprint;
@@ -21,6 +24,10 @@ module.exports = function (config) {
         managersBlueprintsTable[blueprint.name] = blueprint;
     });
 
+    controllersConfig.forEach(blueprint => {
+        controllersBlueprintsTable[blueprint.name] = blueprint;
+    });
+
     let instantiatedDependencies = {
         services: {
             __path: servicesPath
@@ -28,18 +35,25 @@ module.exports = function (config) {
 
         managers: {
             __path: managersPath
+        },
+
+        controllers: {
+            __path: controllersPath
         }
     };
 
     let instantiatedServices = {},
-        instantiatedManagers = {};
+        instantiatedManagers = {},
+        instantiatedControllers = {};
 
     instantiatedServices = instantiateServices({}, servicesConfig);
     instantiatedManagers = instantiateManagers({}, managersConfig);
+    instantiatedControllers = instantiateControllers({}, controllersConfig);
 
     return {
         instantiatedServices,
-        instantiatedManagers
+        instantiatedManagers,
+        instantiatedControllers
     };
 
     function instantiatePackage(config) {
@@ -140,6 +154,23 @@ module.exports = function (config) {
         }
 
         return instantiatedManagers;
+    }
+
+    function instantiateControllers(instance, dependencies) {
+        for (const d of dependencies) {
+            let controller = null,
+                blueprint = controllersBlueprintsTable[d.name];
+
+            blueprint.mock = d.mock;
+
+            controller = instantiateDependency(blueprint, 'controllers');
+
+            instantiatedControllers[convertFileNameToFieldName(d.name)] = controller;
+
+            if (instance) instance[convertFileNameToFieldName(d.name)] = controller;
+        }
+
+        return instantiatedControllers;
     }
 };
 
