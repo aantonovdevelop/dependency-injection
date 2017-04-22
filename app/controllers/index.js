@@ -11,6 +11,12 @@ module.exports = [{
     }],
     managers: [{
         name: 'test-manager-new'
+    }],
+    routes: [{
+        router: 'main',
+        type: 'post',
+        url: '/some',
+        method: 'someFunction'
     }]
 }, {
     name: 'test-controller-new',

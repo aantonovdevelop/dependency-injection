@@ -14,7 +14,9 @@ module.exports = function (config) {
 
         servicesBlueprintsTable = {},
         managersBlueprintsTable = {},
-        controllersBlueprintsTable = {};
+        controllersBlueprintsTable = {},
+
+        routers = config.routers;
 
     servicesConfig.forEach(blueprint => {
         servicesBlueprintsTable[blueprint.name] = blueprint;
@@ -168,7 +170,12 @@ module.exports = function (config) {
             instantiatedControllers[convertFileNameToFieldName(d.name)] = controller;
 
             if (instance) instance[convertFileNameToFieldName(d.name)] = controller;
+
+            for (const route of blueprint.routes) {
+                routers[route.router][route.type](route.url, controller[route.method].bind(controller));
+            }
         }
+
 
         return instantiatedControllers;
     }
