@@ -2,68 +2,42 @@
 
 const path = require('path');
 
-module.exports = function (config) {
-    let servicesPath = config.servicesPath,
-        managersPath = config.managersPath,
-        controllersPath = config.controllersPath,
-        packagesPath = config.packagesPath || `${path.dirname(require.main.filename)}/node_modules/`,
+module.exports = function (options) {
+    const PACKAGES_PATH = options.packagesPath || `${path.dirname(require.main.filename)}/node_modules/`;
 
-        servicesConfig = config && config.services || (servicesPath ? require(servicesPath) : []),
-        managersConfig = config && config.managers || (managersPath ? require(managersPath) : []),
-        controllersConfig = config && config.controllers || (controllersPath ? require(controllersPath) : []),
+    const routers = options.routers;
 
-        servicesBlueprintsTable = {},
-        managersBlueprintsTable = {},
-        controllersBlueprintsTable = {},
+    let blueprintsTables = {},
+        instantiatedDependencies = {};
 
-        routers = config.routers;
+    for (const type in options.types) {
+        if (!options.types.hasOwnProperty(type)) continue;
 
-    servicesConfig.forEach(blueprint => {
-        servicesBlueprintsTable[blueprint.name] = blueprint;
-    });
+        const dConfigs = options.types[type].config || require(options.types[type].path);
 
-    managersConfig.forEach(blueprint => {
-        managersBlueprintsTable[blueprint.name] = blueprint;
-    });
+        blueprintsTables[type] = {};
 
-    controllersConfig.forEach(blueprint => {
-        controllersBlueprintsTable[blueprint.name] = blueprint;
-    });
-
-    let instantiatedDependencies = {
-        services: {
-            __path: servicesPath
-        },
-
-        managers: {
-            __path: managersPath
-        },
-
-        controllers: {
-            __path: controllersPath
+        for (const blueprint of dConfigs) {
+            blueprintsTables[type][blueprint.name] = blueprint;
         }
-    };
+    }
 
-    let instantiatedServices = {},
-        instantiatedManagers = {},
-        instantiatedControllers = {};
+    for (const type in options.types) {
+        if (!options.types.hasOwnProperty(type)) continue;
 
-    instantiatedServices = instantiateServices({}, servicesConfig);
-    instantiatedManagers = instantiateManagers({}, managersConfig);
-    instantiatedControllers = instantiateControllers({}, controllersConfig);
+        const dConfigs = options.types[type].config || require(options.types[type].path);
 
-    return {
-        instantiatedServices,
-        instantiatedManagers,
-        instantiatedControllers
-    };
+        instantiateDependencies({}, dConfigs, type);
+    }
+
+    return instantiatedDependencies;
 
     function instantiatePackage(config) {
         console.log(`Instantiate package ${config.name}`);
 
         let pkg = config.native
             ? require(config.name)
-            : require(`${packagesPath}${config.name}`);
+            : require(`${PACKAGES_PATH}${config.name}`);
 
         if (config.mock) {
             return config.mock;
@@ -76,10 +50,33 @@ module.exports = function (config) {
         }
     }
 
-    function instantiatePackages(instance, dependencies) {
-        for (const packageConfig of dependencies) {
-            instance[convertFileNameToFieldName(packageConfig.instanceName || packageConfig.name)] = instantiatePackage(packageConfig);
+    function instantiateDependencies(instance, dependencies, type) {
+        for (const d of dependencies) {
+            if (type === 'packages') {
+                instance[toCamelCase(d.name)] = instantiatePackage(d);
+
+                continue;
+            }
+
+            let dInstance = null,
+                blueprint = blueprintsTables[type][d.name];
+
+            blueprint.mock = d.mock;
+
+            if (!instantiatedDependencies[type]) instantiatedDependencies[type] = {};
+
+            dInstance = instantiateDependency(blueprint, type);
+
+            instantiatedDependencies[type][toCamelCase(d.name)] = dInstance;
+
+            if (instance) instance[toCamelCase(d.name)] = dInstance;
+
+            for (const route of blueprint.routes || []) {
+                routers[route.router][route.type](route.url, dInstance[route.method].bind(dInstance));
+            }
         }
+
+        return instantiatedDependencies[type];
     }
 
     function instantiateDependency(config, type) {
@@ -89,99 +86,45 @@ module.exports = function (config) {
             return config.mock;
         }
 
-        if (instantiatedDependencies[type][convertFileNameToFieldName(config.name)]) {
-            return instantiatedDependencies[type][convertFileNameToFieldName(config.name)];
+        if (type === 'packages') {
+            return instantiatePackage(config);
         }
 
-        let dependency = require(`${instantiatedDependencies[type].__path}/${config.name}`);
+        if (instantiatedDependencies[type][toCamelCase(config.name)]) {
+            return instantiatedDependencies[type][toCamelCase(config.name)];
+        }
+
+        let dependency = require(`${options.types[type].path}/${config.name}`);
 
         if (config.deployType === 'new') {
             let dependencies = [];
 
-            (config.managers || []).forEach(m => {
-                dependencies.push(instantiateDependency(m, 'managers'));
-            });
+            for (const type in config.dependencies) {
+                if (!config.dependencies.hasOwnProperty(type)) continue;
 
-            (config.services || []).forEach(s => {
-                dependencies.push(instantiateDependency(s, 'services'));
-            });
-
-            (config.packages || []).forEach(p => {
-                dependencies.push(instantiatePackage(p));
-            });
+                for (const d of config.dependencies[type]) {
+                    dependencies.push(instantiateDependency(d, type));
+                }
+            }
 
             dependency = new dependency(...dependencies);
 
-            instantiatedDependencies[type][convertFileNameToFieldName(config.name)] = dependency;
+            instantiatedDependencies[type][toCamelCase(config.name)] = dependency;
         } else {
             dependency = dependency();
 
-            instantiatePackages(dependency, config.packages || []);
-            instantiateServices(dependency, config.services || [], instantiatedDependencies['services']);
-            instantiateManagers(dependency, config.managers || [], instantiatedDependencies['managers']);
+            for (const type in config.dependencies) {
+                if (!config.dependencies.hasOwnProperty(type)) continue;
+
+                instantiateDependencies(dependency, config.dependencies[type], type);
+            }
         }
 
         return dependency;
     }
-
-    function instantiateServices(instance, dependencies) {
-        for (const d of dependencies) {
-            let service = null,
-                blueprint = servicesBlueprintsTable[d.name];
-
-            blueprint.mock = d.mock;
-
-            service = instantiateDependency(blueprint, 'services');
-
-            instantiatedServices[convertFileNameToFieldName(d.name)] = service;
-
-            if (instance) instance[convertFileNameToFieldName(d.name)] = service;
-        }
-
-        return instantiatedServices;
-    }
-
-    function instantiateManagers(instance, dependencies) {
-        for (const d of dependencies) {
-            let manager = null,
-                blueprint = managersBlueprintsTable[d.name];
-
-            blueprint.mock = d.mock;
-
-            manager = instantiateDependency(blueprint, 'managers');
-
-            instantiatedManagers[convertFileNameToFieldName(d.name)] = manager;
-
-            if (instance) instance[convertFileNameToFieldName(d.name)] = manager;
-        }
-
-        return instantiatedManagers;
-    }
-
-    function instantiateControllers(instance, dependencies) {
-        for (const d of dependencies) {
-            let controller = null,
-                blueprint = controllersBlueprintsTable[d.name];
-
-            blueprint.mock = d.mock;
-
-            controller = instantiateDependency(blueprint, 'controllers');
-
-            instantiatedControllers[convertFileNameToFieldName(d.name)] = controller;
-
-            if (instance) instance[convertFileNameToFieldName(d.name)] = controller;
-
-            for (const route of blueprint.routes) {
-                routers[route.router][route.type](route.url, controller[route.method].bind(controller));
-            }
-        }
-
-
-        return instantiatedControllers;
-    }
 };
 
-function convertFileNameToFieldName(name) {
+function toCamelCase(name) {
     let result = '';
 
     name = name.split('-');

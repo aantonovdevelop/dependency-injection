@@ -1,17 +1,20 @@
 module.exports = [{
     name: 'test-controller',
-    packages: [{
-        name: 'assert',
-        native: true
-    }],
-    services: [{
-        name: 'test-service-new'
-    }, {
-        name: 'test-service'
-    }],
-    managers: [{
-        name: 'test-manager-new'
-    }],
+    dependencies: {
+        packages: [{
+            name: 'assert',
+            native: true
+        }],
+        services: [{
+            name: 'test-service-new'
+        }, {
+            name: 'test-service'
+        }],
+        managers: [{
+            name: 'test-manager-new'
+        }],
+    },
+
     routes: [{
         router: 'main',
         type: 'post',
@@ -21,15 +24,35 @@ module.exports = [{
 }, {
     name: 'test-controller-new',
     deployType: 'new',
-    packages: [{
-        name: 'assert',
-        native: true
-    }],
-    services: [{
-        name: 'test-service'
-    }],
-    managers: [{
-        name: 'test-manager-new'
-    }]
+    dependencies: {
+        packages: [{
+            name: 'assert',
+            native: true
+        }],
+        services: [{
+            name: 'test-service'
+        }],
+        managers: [{
+            name: 'test-manager-new'
+        }]
+    }
 }];
 
+let a = {
+    types: {
+        managers: {
+            path: '',
+            configs: []
+        },
+
+        services: {
+            path: '',
+            configs: []
+        },
+
+        controllers: {
+            path: '',
+            configs: []
+        }
+    }
+};
