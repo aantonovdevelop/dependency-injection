@@ -31,6 +31,8 @@ module.exports = [{
         }],
         services: [{
             name: 'test-service'
+        }, {
+            name: 'test-service-new'
         }],
         managers: [{
             name: 'test-manager-new'

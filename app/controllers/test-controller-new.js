@@ -1,11 +1,11 @@
 "use strict";
 
 class TestControllerNew {
-    constructor(testManagerNew, testServiceNew, testService, assert) {
-        this._testManagerNew = testManagerNew;
-        this._testServiceNew = testServiceNew;
-        this._testService = testService;
-        this._assert = assert;
+    constructor(options) {
+        this._testManagerNew = options.testManagerNew;
+        this._testServiceNew = options.testServiceNew;
+        this._testService = options.testService;
+        this._assert = options.assert;
     }
 
     someFunction(req, res) {

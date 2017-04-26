@@ -1,7 +1,7 @@
 "use strict";
 
 class TestServiceNew {
-    constructor (redis) {
+    constructor ({redis}) {
         this._redis = redis;
     }
 

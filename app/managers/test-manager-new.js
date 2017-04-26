@@ -1,9 +1,9 @@
 "use strict";
 
 class TestManagerNew {
-    constructor(testService, redis) {
-        this._testService = testService;
-        this._redis = redis;
+    constructor(options) {
+        this._testService = options.testService;
+        this._redis = options.redis;
     }
 
     async upperCaseRecord() {

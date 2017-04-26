@@ -53,7 +53,7 @@ module.exports = function (options) {
     function instantiateDependencies(instance, dependencies, type) {
         for (const d of dependencies) {
             if (type === 'packages') {
-                instance[toCamelCase(d.name)] = instantiatePackage(d);
+                instance[toCamelCase(d.instanceName || d.name)] = instantiatePackage(d);
 
                 continue;
             }
@@ -97,17 +97,17 @@ module.exports = function (options) {
         let dependency = require(`${options.types[type].path}/${config.name}`);
 
         if (config.deployType === 'new') {
-            let dependencies = [];
+            let dependencies = {};
 
             for (const type in config.dependencies) {
                 if (!config.dependencies.hasOwnProperty(type)) continue;
 
                 for (const d of config.dependencies[type]) {
-                    dependencies.push(instantiateDependency(d, type));
+                    dependencies[toCamelCase(d.instanceName || d.name)] = instantiateDependency(d, type);
                 }
             }
 
-            dependency = new dependency(...dependencies);
+            dependency = new dependency(dependencies);
 
             instantiatedDependencies[type][toCamelCase(config.name)] = dependency;
         } else {
