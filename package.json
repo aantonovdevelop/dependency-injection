@@ -15,5 +15,9 @@
   },
   "devDependencies": {
     "mocha": "^3.2.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aantonovdevelop/dependency-injection.git"
   }
 }
