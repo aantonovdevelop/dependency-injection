@@ -21,7 +21,8 @@ module.exports = [{
             }
         }],
         services: [{
-            name: 'test-service'
+            name: 'test-service-new',
+            deployType: 'new'
         }]
     }
 }];

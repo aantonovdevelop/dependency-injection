@@ -2,12 +2,12 @@
 
 class TestManagerNew {
     constructor(options) {
-        this._testService = options.testService;
+        this._testServiceNew = options.testServiceNew;
         this._redis = options.redis;
     }
 
     async upperCaseRecord() {
-        let str = await this._testService.getSomeFromCache();
+        let str = await this._testServiceNew.getSomeFromCache();
 
         return str.toUpperCase();
     }

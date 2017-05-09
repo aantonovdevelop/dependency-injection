@@ -32,6 +32,7 @@ describe('Deploy application', function () {
         const instances = injector(config);
 
         const testManager = instances['managers'].testManager;
+        const testManagerNew = instances['managers'].testManagerNew;
         const testControllerNew = instances['controllers'].testControllerNew;
 
         assert.ok(testManager);
@@ -41,5 +42,7 @@ describe('Deploy application', function () {
         assert.ok(testControllerNew._testServiceNew);
         assert.ok(testControllerNew._testService);
         assert.ok(testControllerNew._assert);
+
+        testManagerNew.upperCaseRecord();
     });
 });

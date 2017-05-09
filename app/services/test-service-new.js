@@ -1,8 +1,8 @@
 "use strict";
 
 class TestServiceNew {
-    constructor ({redis}) {
-        this._redis = redis;
+    constructor (options) {
+        this._redis = options.redis;
     }
 
     async getSomeFromCache() {

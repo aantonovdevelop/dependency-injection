@@ -1,11 +1,12 @@
 "use strict";
 
 const path = require('path');
+const util = require('util');
 
-module.exports = function (options) {
+module.exports = function (options, routers) {
     const PACKAGES_PATH = options.packagesPath || `${path.dirname(require.main.filename)}/node_modules/`;
 
-    const routers = options.routers;
+    const _routers = routers || options.routers;
 
     let blueprintsTables = {},
         instantiatedDependencies = {};
@@ -13,7 +14,7 @@ module.exports = function (options) {
     for (const type in options.types) {
         if (!options.types.hasOwnProperty(type)) continue;
 
-        const dConfigs = options.types[type].config || require(options.types[type].path);
+        const dConfigs = options.types[type].configs || require(options.types[type].path);
 
         blueprintsTables[type] = {};
 
@@ -25,7 +26,7 @@ module.exports = function (options) {
     for (const type in options.types) {
         if (!options.types.hasOwnProperty(type)) continue;
 
-        const dConfigs = options.types[type].config || require(options.types[type].path);
+        const dConfigs = options.types[type].configs || require(options.types[type].path);
 
         instantiateDependencies({}, dConfigs, type);
     }
@@ -72,7 +73,7 @@ module.exports = function (options) {
             if (instance) instance[toCamelCase(d.name)] = dInstance;
 
             for (const route of blueprint.routes || []) {
-                routers[route.router][route.type](route.url, dInstance[route.method].bind(dInstance));
+                _routers[route.router][route.type](route.url, dInstance[route.method].bind(dInstance));
             }
         }
 
@@ -96,18 +97,33 @@ module.exports = function (options) {
 
         let dependency = require(`${options.types[type].path}/${config.name}`);
 
-        if (config.deployType === 'new') {
+        if (config.deployType === 'new' || config.deployType === 'flow') {
             let dependencies = {};
 
             for (const type in config.dependencies) {
                 if (!config.dependencies.hasOwnProperty(type)) continue;
 
-                for (const d of config.dependencies[type]) {
+                for (let d of config.dependencies[type]) {
+                    if (type !== 'packages')
+                        d = blueprintsTables[type][d.name] || d;
+                    
                     dependencies[toCamelCase(d.instanceName || d.name)] = instantiateDependency(d, type);
                 }
             }
 
-            dependency = new dependency(dependencies);
+            if (config.deployType === 'new') {
+                dependency = new dependency(dependencies);
+            } else {
+                dependency = new dependency();
+
+                for (const dName in dependencies) {
+                    dependency['_' + dName] = dependencies[dName];
+                }
+            }
+
+            if (options.logger) {
+              logger(dependency);
+            }
 
             instantiatedDependencies[type][toCamelCase(config.name)] = dependency;
         } else {
@@ -139,4 +155,42 @@ function toCamelCase(name) {
     });
 
     return result;
+}
+
+function logger(instance) {
+    const functionHandler = {
+        apply: async function (target, thisArg, argumentsList) {
+            const name = instance.constructor.name + ':' + target.name;
+
+            console.log(`Start function ${name} with arguments: ${util.inspect(argumentsList)}`);
+
+            let result = target.apply(thisArg, argumentsList);
+
+            if (result instanceof Promise) {
+                try {
+                    result = await result;
+                } catch (err) {
+                    console.log(`End function ${name} with rejected error: ${util.inspect(err)}`);
+
+                    return Promise.reject(err);
+                }
+
+                console.log(`End function ${name} with resolved result: ${util.inspect(result)}`);
+
+                return Promise.resolve(result);
+            }
+
+            console.log(`End function ${name} with result: ${util.inspect(result)}`);
+
+            return result;
+        }
+    };
+
+    for (let field of Reflect.ownKeys(instance.__proto__)) {
+        console.log(`set proxy on ${field}`);
+
+        if (instance[field] instanceof Function)  {
+            instance[field] = new Proxy(instance[field], functionHandler);
+        }
+    }
 }
