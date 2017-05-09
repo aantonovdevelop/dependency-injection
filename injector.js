@@ -73,7 +73,23 @@ module.exports = function (options, routers) {
             if (instance) instance[toCamelCase(d.name)] = dInstance;
 
             for (const route of blueprint.routes || []) {
-                _routers[route.router][route.type](route.url, dInstance[route.method].bind(dInstance));
+                let middlewares = [];
+
+                for (const middleware of blueprint.routes.middlewares || []) {
+                    if (!(middlewares.func instanceof Function)) {
+                        throw new Error('middleware.func should be a function');
+                    }
+
+                    if (!(middleware.except || []).includes(route.url)) {
+                        middlewares.push(middleware.func);
+                    }
+
+                    if ((middleware.only || []).includes(route.url)) {
+                        middlewares.push(middleware.func);
+                    }
+                }
+
+                _routers[route.router][route.type](route.url, ...middlewares, dInstance[route.method].bind(dInstance));
             }
         }
 
@@ -106,7 +122,7 @@ module.exports = function (options, routers) {
                 for (let d of config.dependencies[type]) {
                     if (type !== 'packages')
                         d = blueprintsTables[type][d.name] || d;
-                    
+
                     dependencies[toCamelCase(d.instanceName || d.name)] = instantiateDependency(d, type);
                 }
             }
