@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node_modules/mocha/bin/mocha --recursive tests/"
+    "test": "node_modules/mocha/bin/mocha --recursive tests/",
+    "flow": "flow"
   },
   "author": "Artem Antonov <aantonov.develop@gmail.com>",
   "license": "MIT",
@@ -16,6 +17,7 @@
   "devDependencies": {
     "babel-cli": "^6.24.1",
     "babel-preset-flow": "^6.23.0",
+    "flow-bin": "^0.46.0",
     "mocha": "^3.2.0"
   },
   "repository": {
