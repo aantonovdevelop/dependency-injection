@@ -14,7 +14,13 @@ module.exports = function (options, routers) {
     for (const type in options.types) {
         if (!options.types.hasOwnProperty(type)) continue;
 
-        const dConfigs = options.types[type].configs || require(options.types[type].path);
+        let dConfigs = null;
+
+        try {
+             dConfigs = options.types[type].configs || require(options.types[type].path);
+        } catch (err) {
+            throw new Error(`Can't load ${type} module by ${options.types[type].path} path`);
+        }
 
         blueprintsTables[type] = {};
 
@@ -75,17 +81,19 @@ module.exports = function (options, routers) {
             for (const route of blueprint.routes || []) {
                 let middlewares = [];
 
-                for (const middleware of blueprint.routes.middlewares || []) {
-                    if (!(middlewares.func instanceof Function)) {
+                for (const middleware of route.middlewares || []) {
+                    const func = instantiatedDependencies['middlewares'][middleware.name][middleware.func];
+
+                    if (!(func instanceof Function)) {
                         throw new Error('middleware.func should be a function');
                     }
 
                     if (!(middleware.except || []).includes(route.url)) {
-                        middlewares.push(middleware.func);
+                        middlewares.push(func);
                     }
 
                     if ((middleware.only || []).includes(route.url)) {
-                        middlewares.push(middleware.func);
+                        middlewares.push(func);
                     }
                 }
 
