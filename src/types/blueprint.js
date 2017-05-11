@@ -81,6 +81,12 @@ class Injector {
 
         return Object.assign(new constructor, _dependencies);
     }
+
+    static mockBodyInjection(mock: Object, dependencies: Array<TDependencyInstance>, packages: Array<TPackageInstance>): Object {
+        const _dependencies = Object.assign(Formatter.toObject(dependencies), Formatter.toObject(packages));
+
+        return Object.assign(mock, _dependencies);
+    }
 }
 
 class Blueprint {
@@ -103,7 +109,9 @@ class Blueprint {
         if (this.options.mock) {
             this.instTable.set(this.options.name, this.options.type, this.options.mock);
 
-            return ((this.options.mock: any): Object);
+            const mock: Object =  ((this.options.mock: any): Object);
+
+            return Injector.mockBodyInjection(mock, dependencies, packages);
         }
 
         const instance = Injector.constructorRestInjection(this.options.constructor, dependencies, packages);

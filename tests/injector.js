@@ -45,4 +45,14 @@ describe('Injector tests', function () {
         assert.ok(result.dep.isDepInstance);
         assert.ok(result.pkg.isPkgInstance);
     });
+
+    it('Should inject into mock', function () {
+        const dependencies = [{name: 'dep', instance: {isDepInstance: true}}];
+        const packages = [{name: 'pkg', instance: {isPkgInstance: true}}];
+
+        const result = Injector.mockBodyInjection({}, dependencies, packages);
+
+        assert.ok(result.dep.isDepInstance);
+        assert.ok(result.pkg.isPkgInstance);
+    });
 });
