@@ -12,7 +12,7 @@ type TBlueprint = {
 
     constructor: Function,
 
-    mock: ?Object,
+    mock: ?Object
 }
 
 type TDependency = {
@@ -169,7 +169,6 @@ class Dependency {
         return toCamelCase(this.options.name);
     }
 }
-
 
 class Package {
     options: TPackage;
