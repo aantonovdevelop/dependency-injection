@@ -27,32 +27,33 @@ const options = {
             path: `${__dirname}/app/controllers`,
 
             //Если определена переменная config, то конфиги инстанцирования подтягиваютс из неё, а app/controllers/index.js игнорируется
-            config: [{
+            blueprints: [{
                 //Имя модуля. Будет инстанцирован как testController
                 name: 'test-controller',
 
                 //См. ниже
                 deployType: 'new',
+                
+                packages: [{
+                    name: 'assert',
+
+                    //Указываем, если модуль нативный
+                    native: true
+                }, {
+                    name: 'then-redis',
+
+                    //Указываем, если необходимо изменить имя инстанса. Иначе инстанцируется как thenRedis
+                    instanceName: 'redis',
+
+                    //Указываем, если после экспорта модуля необходимо вызвать функцию какую то из его функций
+                    callFunction: {
+                        name: 'createClient',
+                        arguments: []
+                    }
+                }],
 
                 //Определяем зависимости
                 dependencies: {
-                    packages: [{
-                        name: 'assert',
-
-                        //Указываем, если модуль нативный
-                        native: true
-                    }, {
-                        name: 'then-redis',
-
-                        //Указываем, если необходимо изменить имя инстанса. Иначе инстанцируется как thenRedis
-                        instanceName: 'redis',
-
-                        //Указываем, если после экспорта модуля необходимо вызвать функцию какую то из его функций
-                        callFunction: {
-                            name: 'createClient',
-                            arguments: []
-                        }
-                    }],
 
                     services: [{
                         name: 'test-service',

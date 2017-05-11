@@ -43,6 +43,80 @@ type TPackage = {
     mock: ?any
 }
 
+class ConfigParser {
+    static parse(config: Object) {
+        const blueprintsTable = new BlueprintsTable();
+
+        const rawBlueprints: Array<Object> = this._getRawBlueprints(config);
+    }
+
+    static _getRawBlueprints(config: Object): Array<Object> {
+        const blueprints: Array<Object> = [];
+
+        for (const type: string in config.types) {
+            if (!config.types.hasOwnProperty(type)) continue;
+
+            if (config.types[type].path) {
+                blueprints.push(...(require(config.types[type].path).blueprints || []));
+            }
+
+            blueprints.push(...(config.types[type].blueprints || []));
+        }
+
+        return blueprints;
+    }
+
+    static _convertRawPackages(rawPackages: Array<Object>, pkgPath: string) {
+        const packages: Array<Package> = [];
+
+        for (const pkg: Object of rawPackages) {
+            packages.push(new Package({
+                name: pkg.name,
+                instanceName: pkg.instanceName,
+                path: pkgPath,
+                isNative: pkg.isNative,
+                callFunction: pkg.callFunction,
+                mock: pkg.mock
+            }));
+        }
+
+        return packages;
+    }
+
+    static _convertRawDependencies(rawDependencies: Object, bpTable: BlueprintsTable) {
+        const dependencies: Array<Dependency> = [];
+
+        for (const type: string in rawDependencies) {
+            if (!rawDependencies.hasOwnProperty(type)) continue;
+
+            for (const rawDependency of rawDependencies[type]) {
+                dependencies.push(new Dependency(bpTable, {
+                    name: rawDependency.name,
+                    type: type,
+                    mock: rawDependency.mock
+                }));
+            }
+        }
+
+        return dependencies;
+    }
+
+    static _convertRawBlueprintToBlueprint(raw: TRawBlueprint, instTable: InstancesTable, dependencies: Array<Dependency>, packages: Array<Package>): TBlueprint {
+        return blueprint = new Blueprint(instTable, {
+            name: raw.name,
+            type: raw.type,
+            deployType: raw.deployType,
+
+            dependencies: dependencies,
+            packages: packages,
+
+            constructor: raw.constructor || require(`${raw.typePath}/${raw.name}`),
+
+            mock: raw.mock
+        });
+    }
+}
+
 class Formatter {
     static toObject (dependencies: Array<TDependencyInstance|TPackageInstance>): Object {
         let result = {};
