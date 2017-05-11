@@ -65,6 +65,24 @@ class Formatter {
     }
 }
 
+class Injector {
+    static constructorRestInjection (constructor: Function, dependencies: Array<TDependencyInstance>, packages: Array<TPackageInstance>): Object {
+        return new constructor(...Formatter.toArray(dependencies), ...Formatter.toArray(packages));
+    }
+
+    static constructorObjectInjection (constructor: Function, dependencies: Array<TDependencyInstance>, packages: Array<TPackageInstance>): Object {
+        const _dependencies = Object.assign(Formatter.toObject(dependencies), Formatter.toObject(packages));
+
+        return new constructor(_dependencies);
+    }
+
+    static bodyInjection(constructor: Function, dependencies: Array<TDependencyInstance>, packages: Array<TPackageInstance>): Object {
+        const _dependencies = Object.assign(Formatter.toObject(dependencies), Formatter.toObject(packages));
+
+        return Object.assign(new constructor, _dependencies);
+    }
+}
+
 class Blueprint {
     options: TBlueprint;
     instTable: InstancesTable;
@@ -88,7 +106,7 @@ class Blueprint {
             return ((this.options.mock: any): Object);
         }
 
-        const instance = new this.options.constructor(...Formatter.toArray(dependencies), ...Formatter.toArray(packages));
+        const instance = Injector.constructorRestInjection(this.options.constructor, dependencies, packages);
 
         this.instTable.set(this.options.name, this.options.type, instance);
 
@@ -226,4 +244,4 @@ function toCamelCase(name: string): string {
     return result;
 }
 
-module.exports = {Blueprint, BlueprintsTable, Dependency, InstancesTable, Package};
+module.exports = {Blueprint, BlueprintsTable, Dependency, InstancesTable, Package, Injector};
