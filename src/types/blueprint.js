@@ -43,27 +43,67 @@ type TPackage = {
     mock: ?any
 }
 
+type TRawBlueprint = {
+    name: string,
+    type: string,
+    typePath: string,
+    deployType: ?string,
+    constructor: ?Function,
+    mock: ?Object,
+    dependencies: Object,
+    packages: Array<Object>
+}
+
 class ConfigParser {
     static parse(config: Object) {
         const blueprintsTable = new BlueprintsTable();
+        const instanceTable = new InstancesTable();
 
-        const rawBlueprints: Array<Object> = this._getRawBlueprints(config);
+        const rawBlueprints: Array<TRawBlueprint> = this._getRawBlueprints(config);
+
+        for (const rawBlueprint: TRawBlueprint of rawBlueprints) {
+            const packages: Array<Package> = ConfigParser._convertRawPackages(rawBlueprint.packages, config.packagesPath);
+            const dependencies: Array<Dependency> = ConfigParser._convertRawDependencies(rawBlueprint.dependencies, blueprintsTable);
+
+            const blueprint: Blueprint = ConfigParser._convertRawBlueprintToBlueprint(rawBlueprint, instanceTable, dependencies, packages);
+
+            blueprintsTable.set(blueprint.options.name, blueprint.options.type, blueprint);
+        }
     }
 
-    static _getRawBlueprints(config: Object): Array<Object> {
-        const blueprints: Array<Object> = [];
+    static _getRawBlueprints(config: Object): Array<TRawBlueprint> {
+        const blueprints: Array<TRawBlueprint> = [];
 
         for (const type: string in config.types) {
             if (!config.types.hasOwnProperty(type)) continue;
 
             if (config.types[type].path) {
-                blueprints.push(...(require(config.types[type].path).blueprints || []));
+                let tempBps: Array<Object> = require(config.types[type].path).blueprints || [];
+
+                for (const bp: Object of tempBps) {
+                    blueprints.push(_convertToRawBlueprint(bp, type, config.types[type].path));
+                }
             }
 
-            blueprints.push(...(config.types[type].blueprints || []));
+            for (const bp: Object of config.types[type].blueprints || []) {
+                blueprints.push(_convertToRawBlueprint(bp, type, config.types[type].path));
+            }
         }
 
         return blueprints;
+
+        function _convertToRawBlueprint(bp: Object, type: string, typePath: string): TRawBlueprint {
+            return {
+                name: bp.name,
+                type: type,
+                typePath: typePath,
+                deployType: bp.deployType,
+                constructor: bp.constructor,
+                mock: bp.mock,
+                dependencies: bp.dependencies,
+                packages: bp.packages
+            }
+        }
     }
 
     static _convertRawPackages(rawPackages: Array<Object>, pkgPath: string) {
@@ -101,8 +141,8 @@ class ConfigParser {
         return dependencies;
     }
 
-    static _convertRawBlueprintToBlueprint(raw: TRawBlueprint, instTable: InstancesTable, dependencies: Array<Dependency>, packages: Array<Package>): TBlueprint {
-        return blueprint = new Blueprint(instTable, {
+    static _convertRawBlueprintToBlueprint(raw: TRawBlueprint, instTable: InstancesTable, dependencies: Array<Dependency>, packages: Array<Package>): Blueprint {
+        return new Blueprint(instTable, {
             name: raw.name,
             type: raw.type,
             deployType: raw.deployType,
@@ -110,7 +150,7 @@ class ConfigParser {
             dependencies: dependencies,
             packages: packages,
 
-            constructor: raw.constructor || require(`${raw.typePath}/${raw.name}`),
+            constructor: raw.constructor || ((require(`${raw.typePath}/${raw.name}`): any): Function),
 
             mock: raw.mock
         });
