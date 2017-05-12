@@ -16,7 +16,7 @@ describe('Injector tests', function () {
         const dependencies = [{name: 'dep', instance: {isDepInstance: true}}];
         const packages = [{name: 'pkg', instance: {isPkgInstance: true}}];
 
-        Injector.constructorRestInjection(constructor, dependencies, packages);
+        Injector.constructorRestInjection(constructor, [...dependencies, ...packages]);
     });
 
     it('Should inject object with parameters into constructor', function (done) {
@@ -30,7 +30,7 @@ describe('Injector tests', function () {
         const dependencies = [{name: 'dep', instance: {isDepInstance: true}}];
         const packages = [{name: 'pkg', instance: {isPkgInstance: true}}];
 
-        Injector.constructorObjectInjection(constructor, dependencies, packages);
+        Injector.constructorObjectInjection(constructor, [...dependencies, ...packages]);
     });
 
     it('Should inject into this', function () {
@@ -40,7 +40,7 @@ describe('Injector tests', function () {
         const dependencies = [{name: 'dep', instance: {isDepInstance: true}}];
         const packages = [{name: 'pkg', instance: {isPkgInstance: true}}];
 
-        const result = Injector.bodyInjection(constructor, dependencies, packages);
+        const result = Injector.bodyInjection(constructor, [...dependencies, ...packages]);
 
         assert.ok(result.dep.isDepInstance);
         assert.ok(result.pkg.isPkgInstance);
@@ -50,7 +50,7 @@ describe('Injector tests', function () {
         const dependencies = [{name: 'dep', instance: {isDepInstance: true}}];
         const packages = [{name: 'pkg', instance: {isPkgInstance: true}}];
 
-        const result = Injector.mockBodyInjection({}, dependencies, packages);
+        const result = Injector.mockBodyInjection({}, [...dependencies, ...packages]);
 
         assert.ok(result.dep.isDepInstance);
         assert.ok(result.pkg.isPkgInstance);

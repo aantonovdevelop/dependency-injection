@@ -21,12 +21,7 @@ type TDependency = {
     mock: ?Object
 }
 
-type TPackageInstance = {
-    name: string,
-    instance: any
-}
-
-type TDependencyInstance = {
+type TComponentInstance = {
     name: string,
     instance: Object
 }
@@ -158,20 +153,20 @@ class ConfigParser {
 }
 
 class Formatter {
-    static toObject (dependencies: Array<TDependencyInstance|TPackageInstance>): Object {
+    static toObject (dependencies: Array<TComponentInstance>): Object {
         let result = {};
 
-        for (const dependency: TDependencyInstance|TPackageInstance of dependencies) {
+        for (const dependency: TComponentInstance of dependencies) {
             result[dependency.name] = dependency.instance;
         }
 
         return result;
     }
 
-    static toArray (dependencies: Array<TDependencyInstance|TPackageInstance>): Array<any> {
+    static toArray (dependencies: Array<TComponentInstance>): Array<any> {
         let result = [];
 
-        for (const dependency: TDependencyInstance|TPackageInstance of dependencies) {
+        for (const dependency: TComponentInstance of dependencies) {
             result.push(dependency.instance);
         }
 
@@ -180,24 +175,24 @@ class Formatter {
 }
 
 class Injector {
-    static constructorRestInjection (constructor: Function, dependencies: Array<TDependencyInstance>, packages: Array<TPackageInstance>): Object {
-        return new constructor(...Formatter.toArray(dependencies), ...Formatter.toArray(packages));
+    static constructorRestInjection (constructor: Function, components: Array<TComponentInstance>): Object {
+        return new constructor(...Formatter.toArray(components));
     }
 
-    static constructorObjectInjection (constructor: Function, dependencies: Array<TDependencyInstance>, packages: Array<TPackageInstance>): Object {
-        const _dependencies = Object.assign(Formatter.toObject(dependencies), Formatter.toObject(packages));
+    static constructorObjectInjection (constructor: Function, components: Array<TComponentInstance>): Object {
+        const _dependencies = Object.assign(Formatter.toObject(components));
 
         return new constructor(_dependencies);
     }
 
-    static bodyInjection(constructor: Function, dependencies: Array<TDependencyInstance>, packages: Array<TPackageInstance>): Object {
-        const _dependencies = Object.assign(Formatter.toObject(dependencies), Formatter.toObject(packages));
+    static bodyInjection(constructor: Function, components: Array<TComponentInstance>): Object {
+        const _dependencies = Formatter.toObject(components);
 
         return Object.assign(new constructor, _dependencies);
     }
 
-    static mockBodyInjection(mock: Object, dependencies: Array<TDependencyInstance>, packages: Array<TPackageInstance>): Object {
-        const _dependencies = Object.assign(Formatter.toObject(dependencies), Formatter.toObject(packages));
+    static mockBodyInjection(mock: Object, components: Array<TComponentInstance>): Object {
+        const _dependencies = Formatter.toObject(components);
 
         return Object.assign(mock, _dependencies);
     }
@@ -217,52 +212,46 @@ class Blueprint {
             return this.instTable.get(this.options.name, this.options.type);
         }
 
-        const dependencies: Array<TDependencyInstance> = Blueprint._createDependencies(this.options.dependencies);
-        const packages: Array<TPackageInstance> = Blueprint._createPackages(this.options.packages);
+        const dependencies: Array<TComponentInstance> = Blueprint._createComponents(this.options.dependencies);
+        const packages: Array<TComponentInstance> = Blueprint._createComponents(this.options.packages);
+
+        const components = [...dependencies, ...packages];
 
         if (this.options.mock) {
             this.instTable.set(this.options.name, this.options.type, this.options.mock);
 
             const mock: Object =  ((this.options.mock: any): Object);
 
-            return Injector.mockBodyInjection(mock, dependencies, packages);
+            return Injector.mockBodyInjection(mock, components);
         }
 
-        const instance = Injector.constructorRestInjection(this.options.constructor, dependencies, packages);
+        const instance = Injector.constructorRestInjection(this.options.constructor, components);
 
         this.instTable.set(this.options.name, this.options.type, instance);
 
         return instance;
     }
 
-    static _createDependencies(dependencies: Array<Dependency> = []): Array<TDependencyInstance> {
-        let _dependencies = [];
+    static _createComponents(components: Array<IComponent> = []): Array<TComponentInstance> {
+        let _components = [];
 
-        for (const dependency: Dependency of dependencies) {
-            _dependencies.push({
-                instance: dependency.getMock() || dependency.getBlueprint().create(),
-                name: dependency.getName()
+        for (const component: IComponent of components) {
+            _components.push({
+                instance: component.create(),
+                name: component.getName()
             });
         }
 
-        return _dependencies;
-    }
-
-    static _createPackages(packages: Array<Package> = []): Array<TPackageInstance> {
-        let _packages = [];
-
-        for (const pkg: Package of packages) {
-            _packages.push({
-                instance: pkg.create(),
-                name: pkg.getName()
-            });
-        }
-
-        return _packages;
+        return _components;
     }
 }
 
-class Dependency {
+interface IComponent {
+    create(): Object|Function,
+    getName(): string
+}
+
+class Dependency implements IComponent {
     options: TDependency;
     bpTable: BlueprintsTable;
 
@@ -271,12 +260,12 @@ class Dependency {
         this.options = options;
     }
 
-    getBlueprint (): Blueprint {
-        return this.bpTable.get(this.options.name, this.options.type);
+    create() {
+        return this.options.mock || this.getBlueprint().create();
     }
 
-    getMock (): ?Object {
-        return this.options.mock;
+    getBlueprint (): Blueprint {
+        return this.bpTable.get(this.options.name, this.options.type);
     }
 
     getName (): string {
@@ -284,7 +273,7 @@ class Dependency {
     }
 }
 
-class Package {
+class Package implements IComponent {
     options: TPackage;
 
     constructor (options: TPackage) {
