@@ -180,21 +180,27 @@ class Injector {
     }
 
     static constructorObjectInjection (constructor: Function, components: Array<TComponentInstance>): Object {
-        const _dependencies = Object.assign(Formatter.toObject(components));
-
-        return new constructor(_dependencies);
+        return new constructor(Formatter.toObject(components));
     }
 
-    static bodyInjection(constructor: Function, components: Array<TComponentInstance>): Object {
-        const _dependencies = Formatter.toObject(components);
-
-        return Object.assign(new constructor, _dependencies);
+    static constructorBodyInjection(constructor: Function, components: Array<TComponentInstance>): Object {
+        return Object.assign(new constructor, Formatter.toObject(components));
     }
 
     static mockBodyInjection(mock: Object, components: Array<TComponentInstance>): Object {
-        const _dependencies = Formatter.toObject(components);
+        return Object.assign(mock, Formatter.toObject(components));
+    }
 
-        return Object.assign(mock, _dependencies);
+    static functionBodyInjection(constructor: Function, components: Array<TComponentInstance>): Object {
+        return Object.assign(constructor(), Formatter.toObject(components));
+    }
+
+    static functionClojureRestInjection(constructor: Function, components: Array<TComponentInstance>): Object {
+        return constructor(...Formatter.toArray(components));
+    }
+
+    static functionClojureObjectInjection(constructor: Function, components: Array<TComponentInstance>): Object {
+        return constructor(Formatter.toObject(components));
     }
 }
 
