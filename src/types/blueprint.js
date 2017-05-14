@@ -6,6 +6,7 @@ type TBlueprint = {
     name: string,
     type: string,
     deployType: string,
+    injectType: string,
 
     dependencies: Array<Dependency>,
     packages: Array<Package>,
@@ -42,11 +43,28 @@ type TRawBlueprint = {
     name: string,
     type: string,
     typePath: string,
-    deployType: ?string,
+    deployType: string,
+    injectType: string,
     constructor: ?Function,
     mock: ?Object,
-    dependencies: Object,
+    dependencies: Array<Object>,
     packages: Array<Object>
+}
+
+class Factory {
+    constructor() {
+
+    }
+
+    static create(config: Object) {
+        const {blueprintsTable, instanceTable} = ConfigParser.parse(config);
+
+        for (const blueprint: Blueprint of blueprintsTable) {
+            blueprint.create();
+        }
+
+        return instanceTable;
+    }
 }
 
 class ConfigParser {
@@ -95,6 +113,7 @@ class ConfigParser {
                 type: type,
                 typePath: typePath,
                 deployType: bp.deployType,
+                injectType: bp.injectType,
                 constructor: bp.constructor,
                 mock: bp.mock,
                 dependencies: bp.dependencies,
@@ -120,7 +139,7 @@ class ConfigParser {
         return packages;
     }
 
-    static _convertRawDependencies(rawDependencies: Object = [], bpTable: BlueprintsTable) {
+    static _convertRawDependencies(rawDependencies: Array<Object> = [], bpTable: BlueprintsTable) {
         const dependencies: Array<Dependency> = [];
 
         for (const rawDependency of rawDependencies) {
@@ -139,6 +158,7 @@ class ConfigParser {
             name: raw.name,
             type: raw.type,
             deployType: raw.deployType,
+            injectType: raw.injectType,
 
             dependencies: dependencies,
             packages: packages,
@@ -200,6 +220,38 @@ class Injector {
     static functionClojureObjectInjection(constructor: Function, components: Array<TComponentInstance>): Object {
         return constructor(Formatter.toObject(components));
     }
+
+    static inject(constructor: Function, components: Array<TComponentInstance>, type: string): Object {
+        switch (type) {
+            case 'constructor-rest': {
+                return Injector.constructorRestInjection(constructor, components);
+            }
+
+            case 'constructor-object': {
+                return Injector.constructorObjectInjection(constructor, components);
+            }
+
+            case 'constructor-body': {
+                return Injector.constructorBodyInjection(constructor, components);
+            }
+
+            case 'function-body': {
+                return Injector.functionBodyInjection(constructor, components);
+            }
+
+            case 'function-rest': {
+                return Injector.functionClojureRestInjection(constructor, components);
+            }
+
+            case 'function-object': {
+                return Injector.functionClojureObjectInjection(constructor, components);
+            }
+
+            default: {
+                throw new Error('Unknown type of construct or injection');
+            }
+        }
+    }
 }
 
 class Blueprint {
@@ -229,12 +281,13 @@ class Blueprint {
             return Injector.mockBodyInjection(mock, components);
         }
 
-        const instance = Injector.constructorRestInjection(this.options.constructor, components);
+        const instance: Object = Injector.inject(this.options.constructor, components, `${this.options.deployType}-${this.options.injectType}`);
 
         this.instTable.set(this.options.name, this.options.type, instance);
 
         return instance;
     }
+
 
     static _createComponents(components: Array<IComponent> = []): Array<TComponentInstance> {
         let _components = [];
@@ -347,6 +400,10 @@ class BlueprintsTable {
     get (name: string, type: string): Blueprint {
         return ((this.table.get(name + type): any): Blueprint);
     }
+
+    [Symbol.iterator]() {
+        return this.table.values();
+    }
 }
 
 function toCamelCase(name: string): string {
@@ -366,4 +423,4 @@ function toCamelCase(name: string): string {
     return result;
 }
 
-module.exports = {Blueprint, BlueprintsTable, Dependency, InstancesTable, Package, Injector, ConfigParser};
+module.exports = {Blueprint, BlueprintsTable, Dependency, InstancesTable, Package, Injector, ConfigParser, Factory};
