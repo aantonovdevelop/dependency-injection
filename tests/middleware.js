@@ -2,61 +2,68 @@
 
 const assert = require('assert');
 
-const injector = require('../injector');
+const {Middleware, InstancesTable, MiddlewareTable} = require('../src/types/blueprint');
 
-const config = {
-    types: {
-        controllers: {
-            configs: [{
-                name: 'controller',
-                mock: {
-                    some: function (req, res) {
-                        console.log(req, res);
-                    }
-                },
+describe('Middleware', function () {
+    let mw1, mw2, mw3 = null;
 
-                dependencies: {
-                    middleware: [{
-                        name: 'authorization'
-                    }]
-                },
+    const testurl1 = 'testurl1';
+    const testurl2 = 'testurl2';
 
-                routes: [{
-                    router: 'main',
-                    type: 'post',
-                    url: '/some',
-                    method: 'some',
-                    middlewares: [{
-                        name: 'authorization',
-                        func: 'authorization'
-                    }]
-                }]
-            }]
-        },
+    it('Should create middleware', function () {
 
-        middleware: {
-            configs: [{
-                name: 'authorization',
-                mock: {
-                    authorization: function (req, res, next) {
-                        next(req + 1, res + 1);
-                    }
-                }
-            }]
-        }
-    }
-};
+        mw1 = new Middleware(new InstancesTable, {
+            name: 'mw1',
+            component: {
+                type: 'type_1',
+                name: 'type1Component',
+                func: 'some'
+            },
+            except: [],
+            only: []
+        });
 
-describe('Middleware injection', function () {
-    it('Should inject middleware into controller', function () {
-        let router = {
-            post: function () {
-                console.dir(arguments);
-            }
-        };
+        mw2 = new Middleware(new InstancesTable, {
+            name: 'mw2',
+            component: {
+                type: 'type_1',
+                name: 'type1Component',
+                func: 'some'
+            },
+            except: [testurl1],
+            only: []
+        });
 
-        const result = injector(config, {main: router});
+        mw3 = new Middleware(new InstancesTable, {
+            name: 'mw3',
+            component: {
+                type: 'type_1',
+                name: 'type1Component',
+                func: 'some'
+            },
+            except: [],
+            only: [testurl2]
+        });
 
-        assert.ok(result);
+        assert.ok(mw1.isCorrectForUrl(testurl1));
+        assert.ok(mw1.isCorrectForUrl(testurl2));
+        assert.ok(!mw2.isCorrectForUrl(testurl1));
+        assert.ok(mw2.isCorrectForUrl(testurl2));
+        assert.ok(mw3.isCorrectForUrl(testurl2));
+        assert.ok(!mw3.isCorrectForUrl(testurl1));
+    });
+
+    it('Should create MiddlewareTable', function () {
+        const middlewareTable = new MiddlewareTable();
+
+        middlewareTable.set(mw1.getName(), mw1);
+        middlewareTable.set(mw2.getName(), mw2);
+        middlewareTable.set(mw3.getName(), mw3);
+
+        const forTestUrl1 = middlewareTable.getForUrl(testurl1);
+        const forTestUrl2 = middlewareTable.getForUrl(testurl2);
+
+        assert.equal(forTestUrl1.length, 1);
+        assert.equal(forTestUrl2.length, 3);
     });
 });

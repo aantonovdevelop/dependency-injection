@@ -57,10 +57,25 @@ describe('Factory', function () {
                         }
                     }]
                 }
-            }
+            },
+
+            middleware: [{
+                component: {
+                    type: 'type_2',
+                    name: 'type2Component',
+                    func: 'isInstanceOf'
+                },
+                except: []
+            }],
+
+            routes: [{
+                url: '/some',
+                method: 'get',
+                func: 'type_3.type3Component.isInstanceOf',
+            }]
         };
 
-        const instances = Factory.create(config);
+        const instances = Factory.create(config, {get: function () {}});
 
         assert.ok(instances);
 

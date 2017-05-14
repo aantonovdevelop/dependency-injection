@@ -22,6 +22,24 @@ type TDependency = {
     mock: ?Object
 }
 
+type TMiddleware = {
+    component: {
+        type: string,
+        name: string,
+        func: ?string
+    },
+    except: ?Array<Object>,
+    only: ?Array<Object>
+}
+
+type TRoute = {
+    url: string,
+    func: {
+        fromType: string,
+        funcName: string
+    }
+}
+
 type TComponentInstance = {
     name: string,
     instance: Object
@@ -71,8 +89,9 @@ class ConfigParser {
     static parse(config: Object) {
         const blueprintsTable = new BlueprintsTable();
         const instanceTable = new InstancesTable();
+        const middlewareTable = new MiddlewareTable();
 
-        const rawBlueprints: Array<TRawBlueprint> = this._getRawBlueprints(config);
+        const rawBlueprints: Array<TRawBlueprint> = this._getRawBlueprints(config.types);
 
         for (const rawBlueprint: TRawBlueprint of rawBlueprints) {
             const packages: Array<Package> = ConfigParser._convertRawPackages(rawBlueprint.packages, config.packagesPath);
@@ -86,22 +105,22 @@ class ConfigParser {
         return {blueprintsTable, instanceTable};
     }
 
-    static _getRawBlueprints(config: Object): Array<TRawBlueprint> {
+    static _getRawBlueprints(types: Object): Array<TRawBlueprint> {
         const blueprints: Array<TRawBlueprint> = [];
 
-        for (const type: string in config.types) {
-            if (!config.types.hasOwnProperty(type)) continue;
+        for (const type: string in types) {
+            if (!types.hasOwnProperty(type)) continue;
 
-            if (config.types[type].path) {
-                let tempBps: Array<Object> = require(config.types[type].path).blueprints || [];
+            if (types[type].path) {
+                let tempBps: Array<Object> = require(types[type].path).blueprints || [];
 
                 for (const bp: Object of tempBps) {
-                    blueprints.push(_convertToRawBlueprint(bp, type, config.types[type].path));
+                    blueprints.push(_convertToRawBlueprint(bp, type, types[type].path));
                 }
             }
 
-            for (const bp: Object of config.types[type].blueprints || []) {
-                blueprints.push(_convertToRawBlueprint(bp, type, config.types[type].path));
+            for (const bp: Object of types[type].blueprints || []) {
+                blueprints.push(_convertToRawBlueprint(bp, type, types[type].path));
             }
         }
 
@@ -250,6 +269,34 @@ class Injector {
             default: {
                 throw new Error('Unknown type of construct or injection');
             }
+        }
+    }
+}
+
+class Middleware implements IComponent {
+    options: TMiddleware;
+    instTable: InstancesTable;
+
+    constructor (instTable: InstancesTable, options: TMiddleware) {
+        this.instTable = instTable;
+        this.options = options;
+    }
+
+    create(): Function {
+        return (this.options.component.func)
+            ? this.instTable.get(this.options.component.name, this.options.component.type)[this.optons.component.func]
+            : this.instTable.get(this.options.component.name, this.options.component.type);
+    }
+
+    getName () {
+        return this.options.name;
+    }
+
+    isCorrectForUrl (url: string): boolean {
+        if (this.options.only && this.options.only.length) {
+            return this.options.only.includes(url);
+        } else {
+            return !this.options.except.includes(url);
         }
     }
 }
@@ -406,6 +453,38 @@ class BlueprintsTable {
     }
 }
 
+class MiddlewareTable {
+    table: Map<string, Middleware>;
+
+    constructor () {
+        this.table = new Map();
+    }
+
+    set (name: string, middleware: Middleware): void {
+        if (!name) throw new Error(`Name of middleware is undefined`);
+
+        this.table.set(name, middleware);
+    }
+
+    get (name: string): Middleware {
+        return this.table.get(name);
+    }
+
+    getForUrl (url: string): Array<Middleware> {
+        const middleware: Array<Middleware> = [];
+
+        for (const mw: Middleware of this.table.values()) {
+            mw.isCorrectForUrl(url) ? middleware.push(mw): null;
+        }
+
+        return middleware;
+    }
+
+    [Symbol.iterator] () {
+        return  this.table.entries();
+    }
+}
+
 function toCamelCase(name: string): string {
     let result: string = '';
 
@@ -423,4 +502,4 @@ function toCamelCase(name: string): string {
     return result;
 }
 
-module.exports = {Blueprint, BlueprintsTable, Dependency, InstancesTable, Package, Injector, ConfigParser, Factory};
+module.exports = {Blueprint, BlueprintsTable, Dependency, InstancesTable, Package, Injector, ConfigParser, Factory, Middleware, MiddlewareTable};
