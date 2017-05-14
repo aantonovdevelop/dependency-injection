@@ -23,6 +23,7 @@ type TDependency = {
 }
 
 type TMiddleware = {
+    name: string,
     component: {
         type: string,
         name: string,
@@ -77,6 +78,7 @@ class Factory {
     static create(config: Object) {
         const {blueprintsTable, instanceTable} = ConfigParser.parse(config);
 
+        // $FlowFixMe can't find the iterator
         for (const blueprint: Blueprint of blueprintsTable) {
             blueprint.create();
         }
@@ -141,7 +143,7 @@ class ConfigParser {
         }
     }
 
-    static _convertRawPackages(rawPackages: Array<Object> = [], pkgPath: string) {
+    static _convertRawPackages(rawPackages: Array<Object> = [], pkgPath: string): Array<Package> {
         const packages: Array<Package> = [];
 
         for (const pkg: Object of rawPackages) {
@@ -158,7 +160,7 @@ class ConfigParser {
         return packages;
     }
 
-    static _convertRawDependencies(rawDependencies: Array<Object> = [], bpTable: BlueprintsTable) {
+    static _convertRawDependencies(rawDependencies: Array<Object> = [], bpTable: BlueprintsTable): Array<Dependency> {
         const dependencies: Array<Dependency> = [];
 
         for (const rawDependency of rawDependencies) {
@@ -283,9 +285,15 @@ class Middleware implements IComponent {
     }
 
     create(): Function {
-        return (this.options.component.func)
-            ? this.instTable.get(this.options.component.name, this.options.component.type)[this.optons.component.func]
+        const middleware = (this.options.component.func)
+            ? this.instTable.get(this.options.component.name, this.options.component.type)[this.options.component.func]
             : this.instTable.get(this.options.component.name, this.options.component.type);
+
+        if (middleware instanceof Function) {
+            return middleware;
+        } else {
+            throw new Error(`Middleware ${this.options.name} should be a function`);
+        }
     }
 
     getName () {
@@ -293,10 +301,12 @@ class Middleware implements IComponent {
     }
 
     isCorrectForUrl (url: string): boolean {
-        if (this.options.only && this.options.only.length) {
+        if (this.options.only instanceof Array) {
+            // $FlowFixMe url should be an Object
             return this.options.only.includes(url);
         } else {
-            return !this.options.except.includes(url);
+            // $FlowFixMe url should be an Object
+            return !(this.options.except || []).includes(url);
         }
     }
 }
@@ -336,6 +346,7 @@ class Blueprint {
     }
 
 
+    // $FlowFixMe expecting IComponent instance
     static _createComponents(components: Array<IComponent> = []): Array<TComponentInstance> {
         let _components = [];
 
@@ -448,6 +459,7 @@ class BlueprintsTable {
         return ((this.table.get(name + type): any): Blueprint);
     }
 
+    // $FlowFixMe
     [Symbol.iterator]() {
         return this.table.values();
     }
@@ -467,7 +479,7 @@ class MiddlewareTable {
     }
 
     get (name: string): Middleware {
-        return this.table.get(name);
+        return ((this.table.get(name): any): Middleware);
     }
 
     getForUrl (url: string): Array<Middleware> {
@@ -480,6 +492,7 @@ class MiddlewareTable {
         return middleware;
     }
 
+    // $FlowFixMe
     [Symbol.iterator] () {
         return  this.table.entries();
     }

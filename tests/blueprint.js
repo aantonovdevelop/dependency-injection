@@ -16,7 +16,8 @@ describe('Blueprints', function () {
         const mainConfig = {
             name: 'main-service',
             type: 'services',
-            deployType: 'new',
+            deployType: 'constructor',
+            injectType: 'rest',
             dependencies: [new Dependency(blueprintTable, {name: 'dep-service', type: 'services'})],
             packages: [new Package({name: 'assert', isNative: true})],
             constructor: class {
@@ -35,7 +36,8 @@ describe('Blueprints', function () {
         const depConfig = {
             name: 'dep-service',
             type: 'services',
-            deployType: 'new',
+            deployType: 'constructor',
+            injectType: 'body',
             dependencies: [],
             constructor: function () {
                 this.get = function () {
@@ -64,7 +66,6 @@ describe('Blueprints', function () {
         const mainConfig = {
             name: 'main-service',
             type: 'services',
-            deployType: 'new',
             dependencies: [new Dependency(blueprintTable, {name: 'dep-service', type: 'services'})],
             packages: [new Package({name: 'assert', isNative: true})],
             mock: {
@@ -79,7 +80,8 @@ describe('Blueprints', function () {
         const depConfig = {
             name: 'dep-service',
             type: 'services',
-            deployType: 'new',
+            deployType: 'constructor',
+            injectType: 'body',
             dependencies: [],
             constructor: function () {
                 this.get = function () {
