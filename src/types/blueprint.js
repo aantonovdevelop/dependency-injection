@@ -64,6 +64,8 @@ class ConfigParser {
 
             blueprintsTable.set(blueprint.options.name, blueprint.options.type, blueprint);
         }
+
+        return {blueprintsTable, instanceTable};
     }
 
     static _getRawBlueprints(config: Object): Array<TRawBlueprint> {
@@ -101,7 +103,7 @@ class ConfigParser {
         }
     }
 
-    static _convertRawPackages(rawPackages: Array<Object>, pkgPath: string) {
+    static _convertRawPackages(rawPackages: Array<Object> = [], pkgPath: string) {
         const packages: Array<Package> = [];
 
         for (const pkg: Object of rawPackages) {
@@ -118,19 +120,15 @@ class ConfigParser {
         return packages;
     }
 
-    static _convertRawDependencies(rawDependencies: Object, bpTable: BlueprintsTable) {
+    static _convertRawDependencies(rawDependencies: Object = [], bpTable: BlueprintsTable) {
         const dependencies: Array<Dependency> = [];
 
-        for (const type: string in rawDependencies) {
-            if (!rawDependencies.hasOwnProperty(type)) continue;
-
-            for (const rawDependency of rawDependencies[type]) {
-                dependencies.push(new Dependency(bpTable, {
-                    name: rawDependency.name,
-                    type: type,
-                    mock: rawDependency.mock
-                }));
-            }
+        for (const rawDependency of rawDependencies) {
+            dependencies.push(new Dependency(bpTable, {
+                name: rawDependency.name,
+                type: rawDependency.type,
+                mock: rawDependency.mock
+            }));
         }
 
         return dependencies;
@@ -315,6 +313,10 @@ class InstancesTable {
     }
 
     set (name: string, type: string, instance: Object): void {
+        if (!name) throw new Error(`Name of ${type} instance is undefined`);
+        else if (!type) throw new Error(`Type of ${name} instance is undefined`);
+        else if (!instance) throw new Error(`Instance of ${name} ${type} is undefined`);
+
         this.table.set(name + type, instance);
     }
 
@@ -335,6 +337,10 @@ class BlueprintsTable {
     }
 
     set (name: string, type: string, blueprint: Blueprint): void {
+        if (!name) throw new Error(`Name of ${type} blueprint is undefined`);
+        else if (!type) throw new Error(`Type of ${name} blueprint is undefined`);
+        else if (!blueprint) throw new Error(`Blueprint of ${name} ${type} is undefined`);
+
         this.table.set(name + type, blueprint);
     }
 
@@ -360,4 +366,4 @@ function toCamelCase(name: string): string {
     return result;
 }
 
-module.exports = {Blueprint, BlueprintsTable, Dependency, InstancesTable, Package, Injector};
+module.exports = {Blueprint, BlueprintsTable, Dependency, InstancesTable, Package, Injector, ConfigParser};
