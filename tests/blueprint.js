@@ -5,11 +5,11 @@ const assert = require('assert');
 const describe = require('mocha').describe;
 const it = require('mocha').it;
 
-const Blueprint = require('../src/blueprint');
-const BlueprintsTable = require('../src/tables/blueprints-table');
-const Dependency = require('../src/components/dependency');
-const InstancesTable = require('../src/tables/instances-table');
-const Package = require('../src/components/package');
+const Blueprint = require('../build/blueprint');
+const BlueprintsTable = require('../build/tables/blueprints-table');
+const Dependency = require('../build/components/dependency');
+const InstancesTable = require('../build/tables/instances-table');
+const Package = require('../build/components/package');
 
 describe('Blueprints', function () {
     let mainBlueprint: Blueprint,
@@ -25,7 +25,7 @@ describe('Blueprints', function () {
             injectType: 'rest',
             dependencies: [new Dependency(blueprintTable, {name: 'dep-service', type: 'services'})],
             packages: [new Package({name: 'assert', isNative: true})],
-            constructor: class {
+            $constructor: class {
                 constructor(dep, assert) {
                     this.dep = dep;
                     this.assert = assert;
@@ -45,7 +45,7 @@ describe('Blueprints', function () {
             deployType: 'constructor',
             injectType: 'body',
             dependencies: [],
-            constructor: function () {
+            $constructor: function () {
                 this.get = function () {
                     return 1;
                 }
@@ -89,7 +89,7 @@ describe('Blueprints', function () {
             deployType: 'constructor',
             injectType: 'body',
             dependencies: [],
-            constructor: function () {
+            $constructor: function () {
                 this.get = function () {
                     return 1;
                 }
