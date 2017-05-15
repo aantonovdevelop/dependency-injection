@@ -1,5 +1,7 @@
 "use strict";
 
+const util = require('util');
+
 function logger(instance) {
     const functionHandler = {
         apply: async function (target, thisArg, argumentsList) {
