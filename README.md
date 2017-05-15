@@ -5,8 +5,11 @@ npm install @aantonov/dep-injector
 ```
 ## Usage
 ```javascript
-const injector = require('dep-injector');
 const app = require('express')();
+
+const Factory = require('dep-injector');
+
+const factory = new Factory(app);
 
 const options = {
     //Определяем путь к установленным npm пакетам
@@ -32,7 +35,8 @@ const options = {
                 name: 'test-controller',
 
                 //См. ниже
-                deployType: 'new',
+                deployType: 'constructor',
+                injectType: 'body',
                 
                 packages: [{
                     name: 'assert',
@@ -63,46 +67,37 @@ const options = {
                             getSomeNumber: function () {return 10}
                         }
                     }]
-                },
+                }
 
                 //Привязываем роуты к функциям контроллера
-                routes: [{
-                    //Имя роутера к которому будет привязан роут
-                    router: 'main',
-
-                    //Тип запроса
-                    type: 'post',
-
-                    //URL запроса
-                    url: '/some',
-
-                    //Метод контроллера который будет привязан к роуту
-                    method: 'someFunction'
-                }]
             }]
         }
     },
 
-    //Определяем роутеры, которые будут исользоваться в приложении
-    routers: {
-        //Имена выбираем произвольно
-        main: app
-    }
+    routes: [{
+        //Тип запроса
+        type: 'post',
+
+        //URL запроса
+        url: '/some',
+
+        //Метод контроллера который будет привязан к роуту
+        method: 'controllers.test-controller.someFunction'
+    }]
 }
 
 //Инстанцируем классы и зависимости
-injector(options)
+factory.create(options)
 
 ```
 ### Controller example
-    Если `deployType: 'new'`
+
+Если `deployType: 'constructor' && injectType: 'object'`
 
 ```javascript
 class TestController {
     constructor(options) {
         this._assert = options.assert;
-        this._redis = options.redis;
-
         this._testService = options.testService;
     }
 
@@ -112,26 +107,89 @@ class TestController {
         res.send(200);
     }
 }
-
-module.exports = TestController;
 ```
 
-Иначе
+Если `deployType: 'constructor' && injectType: 'body'`
 
-```javascript
-module.exports = function () {
-    // self будет содержать все указанные в конфиге зависимости
-    const self = this;
+```ecmascript 6
+class TestController {
+    _assert: TAssert;
+    _testService: TestService;
+    
+    someFunction(req, res) {
+        this._assert.equal(this._testService.getSomeValue(), 10); //ok
 
-    return {
-        someFunction: function (req, res) {
-            self.assert.ok(self.redis); //ok
-            self.assert.ok(self.testService); //ok
-
-            self.assert.equal(self.testService.getSomeValue(), 10); //ok
-
-            res.send(200);
-        }
+        res.send(200);
     }
 }
+```
+
+### Mocks
+
+```ecmascript 6
+const Factory = require('./build/factory');
+const factory = new Factory();
+
+const config = {
+    types: {
+        controller: {
+            blueprints: [{
+                name: 'test-controller',
+                // deployType & injectType игнорируются. Зависимости ижектятся в тело мока
+                mock: {
+                    sign: async function (req, res) {
+                        const response = await this.testService.get();
+
+                        res.send(response);
+                    }
+                },
+
+                dependencies: [{
+                    name: 'test-service',
+                    type: 'service'
+                }]
+            }]
+        },
+
+        service: {
+            blueprints: [{
+                name: 'test-service',
+                deployType: 'constructor',
+                injectType: 'object',
+
+                //Инстанцирует класс исходя из конструктора
+                $constructor: class {
+                    constructor({redis}) {
+                        this.redis = redis;
+                    }
+
+                    async get() {
+                        return this.redis.get('key');
+                    }
+                },
+
+                packages: [{
+                    name: 'redis',
+                    mock: {
+                        get: function () {
+                            return Promise.resolve('Hello World!')
+                        }
+                    }
+                }]
+            }]
+        }
+    }
+};
+
+const instances = factory.create(config);
+
+const res = {send: function (value) {
+    console.log(value); // Print 'Hello World!'
+}};
+
+/**
+* {string} Name name of component
+* {string} Type type of component
+*/
+instances.get('test-controller', 'controller').sign({}, res);
 ```
