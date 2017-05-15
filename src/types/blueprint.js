@@ -35,8 +35,10 @@ type TMiddleware = {
 
 type TRoute = {
     url: string,
+    method: string,
     func: {
         fromType: string,
+        compName: string,
         funcName: string
     }
 }
@@ -71,27 +73,37 @@ type TRawBlueprint = {
 }
 
 class Factory {
-    constructor() {
+    router: Object;
 
+    constructor(router: Object) {
+        this.router = router;
     }
 
-    static create(config: Object) {
-        const {blueprintsTable, instanceTable} = ConfigParser.parse(config);
+    create(config: Object) {
+        config.router = this.router || config.router;
+
+        const {blueprintsTable, instancesTable, routesTable} = ConfigParser.parse(config);
 
         // $FlowFixMe can't find the iterator
         for (const blueprint: Blueprint of blueprintsTable) {
             blueprint.create();
         }
 
-        return instanceTable;
+        // $FlowFixMe can't find the iterator
+        for (const route: Route of routesTable) {
+            route.create();
+        }
+
+        return instancesTable;
     }
 }
 
 class ConfigParser {
     static parse(config: Object) {
-        const blueprintsTable = new BlueprintsTable();
-        const instanceTable = new InstancesTable();
-        const middlewareTable = new MiddlewareTable();
+        const blueprintsTable: BlueprintsTable = new BlueprintsTable();
+        const instancesTable: InstancesTable = new InstancesTable();
+        const middlewareTable: MiddlewareTable = new MiddlewareTable();
+        const routesTable: RoutesTable = new RoutesTable();
 
         const rawBlueprints: Array<TRawBlueprint> = this._getRawBlueprints(config.types);
 
@@ -99,12 +111,65 @@ class ConfigParser {
             const packages: Array<Package> = ConfigParser._convertRawPackages(rawBlueprint.packages, config.packagesPath);
             const dependencies: Array<Dependency> = ConfigParser._convertRawDependencies(rawBlueprint.dependencies, blueprintsTable);
 
-            const blueprint: Blueprint = ConfigParser._convertRawBlueprintToBlueprint(rawBlueprint, instanceTable, dependencies, packages);
+            const blueprint: Blueprint = ConfigParser._convertRawBlueprintToBlueprint(rawBlueprint, instancesTable, dependencies, packages);
 
             blueprintsTable.set(blueprint.options.name, blueprint.options.type, blueprint);
         }
 
-        return {blueprintsTable, instanceTable};
+        const middleware: Array<Middleware> = ConfigParser._convertRawMiddleware(config.middleware, instancesTable);
+
+        for (const mw: Middleware of middleware) {
+            middlewareTable.set(mw.getName(), mw);
+        }
+
+        const routes: Array<Route> = ConfigParser._convertRawRoutes(config.routes, config.router, instancesTable, middlewareTable);
+
+        for (const route: Route of routes) {
+            routesTable.set(route.getName(), route);
+        }
+
+        return {blueprintsTable, instancesTable, middlewareTable, routesTable};
+    }
+
+    static _convertRawMiddleware(rawMiddleware: Array<Object>, instTable: InstancesTable): Array<Middleware> {
+        const middleware: Array<Middleware> = [];
+
+        for (const mw: Object of rawMiddleware) {
+            const componentInfo: Array<string> = mw.func.split('.');
+
+            middleware.push(new Middleware(instTable, {
+                name: mw.name,
+                component: {
+                    type: componentInfo[0],
+                    name: componentInfo[1],
+                    func: componentInfo[2]
+                },
+                except: mw.except,
+                only: mw.only
+            }));
+        }
+
+        return middleware;
+    }
+
+    static _convertRawRoutes(rawRoutes: Array<Object>, router: Object, instTable: InstancesTable, mwTable: MiddlewareTable): Array<Route> {
+        const routes: Array<Route> = [];
+
+        for (const route: Object of rawRoutes) {
+            const componentInfo: Array<string> = route.func.split('.');
+
+            routes.push(new Route(router, instTable, mwTable, {
+                url: route.url,
+                method: route.method,
+                func: {
+                    fromType: componentInfo[0],
+                    compName: componentInfo[1],
+                    funcName: componentInfo[2]
+                }
+            }));
+        }
+
+        return routes;
     }
 
     static _getRawBlueprints(types: Object): Array<TRawBlueprint> {
@@ -163,7 +228,7 @@ class ConfigParser {
     static _convertRawDependencies(rawDependencies: Array<Object> = [], bpTable: BlueprintsTable): Array<Dependency> {
         const dependencies: Array<Dependency> = [];
 
-        for (const rawDependency of rawDependencies) {
+        for (const rawDependency: Object of rawDependencies) {
             dependencies.push(new Dependency(bpTable, {
                 name: rawDependency.name,
                 type: rawDependency.type,
@@ -275,6 +340,51 @@ class Injector {
     }
 }
 
+class Route implements IComponent {
+    options: TRoute;
+    instTable: InstancesTable;
+    middlewareTable: MiddlewareTable;
+    router: Object;
+
+    constructor (router: Object, instTable: InstancesTable, middlewareTable: MiddlewareTable, options: TRoute) {
+        this.options = options;
+        this.instTable = instTable;
+        this.middlewareTable = middlewareTable;
+        this.router = router;
+    }
+
+    create (): Object|Function {
+        const component: Object = this.instTable.get(this.options.func.compName, this.options.func.fromType);
+
+        if (!component)
+            throw new Error(`Can't resolve component for ${this.options.url}`);
+
+        const middleware = (() => {
+            const instances: Array<Function> = [];
+
+            for (const mw: Middleware of this.middlewareTable.getForUrl(this.options.url)) {
+                instances.push(mw.create());
+            }
+
+            return instances;
+        })();
+
+
+        const func: Function = component[this.options.func.funcName];
+
+        if (!func || !(func instanceof Function))
+            throw new Error(`Can't resolve function for ${this.options.url}`);
+
+        this.router[this.options.method](this.options.url, ...(middleware || []), func.bind(component));
+
+        return this.router;
+    }
+
+    getName (): string {
+        return `${this.options.method}_${this.options.url}`;
+    }
+}
+
 class Middleware implements IComponent {
     options: TMiddleware;
     instTable: InstancesTable;
@@ -285,7 +395,7 @@ class Middleware implements IComponent {
     }
 
     create(): Function {
-        const middleware = (this.options.component.func)
+        const middleware: Object|Function = (this.options.component.func)
             ? this.instTable.get(this.options.component.name, this.options.component.type)[this.options.component.func]
             : this.instTable.get(this.options.component.name, this.options.component.type);
 
@@ -423,7 +533,7 @@ class InstancesTable {
         this.table = new Map();
     }
 
-    set (name: string, type: string, instance: Object): void {
+    set (name: string, type: string, instance: Object|Function): void {
         if (!name) throw new Error(`Name of ${type} instance is undefined`);
         else if (!type) throw new Error(`Type of ${name} instance is undefined`);
         else if (!instance) throw new Error(`Instance of ${name} ${type} is undefined`);
@@ -495,6 +605,29 @@ class MiddlewareTable {
     // $FlowFixMe
     [Symbol.iterator] () {
         return  this.table.entries();
+    }
+}
+
+class RoutesTable {
+    table: Map<string, Route>;
+
+    constructor() {
+        this.table = new Map();
+    }
+
+    set(name: string, route: Route): void {
+        if (!name) throw new Error(`Name of route is undefined`);
+
+        this.table.set(route.getName(), route);
+    }
+
+    get(name: string): Route {
+        return ((this.table.get(name): any): Route);
+    }
+
+    // $FlowFixMe
+    [Symbol.iterator] () {
+        return  this.table.values();
     }
 }
 

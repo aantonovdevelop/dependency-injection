@@ -60,11 +60,8 @@ describe('Factory', function () {
             },
 
             middleware: [{
-                component: {
-                    type: 'type_2',
-                    name: 'type2Component',
-                    func: 'isInstanceOf'
-                },
+                name: 'instanceOf',
+                func: 'type_2.type2Component.isInstanceOf',
                 except: []
             }],
 
@@ -75,7 +72,8 @@ describe('Factory', function () {
             }]
         };
 
-        const instances = Factory.create(config, {get: function () {}});
+        const factory = new Factory({get: function () {}});
+        const instances = factory.create(config);
 
         assert.ok(instances);
 
