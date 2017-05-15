@@ -1,5 +1,5 @@
 "use strict";
 
-const Factory = require('./src/factory');
+const Factory = require('./build/factory');
 
 module.exports = Factory;

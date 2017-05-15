@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "node_modules/mocha/bin/mocha --recursive tests/",
-    "flow": "flow"
+    "flow": "flow",
+    "prepublish": "babel src/ -d build/"
   },
   "author": "Artem Antonov <aantonov.develop@gmail.com>",
   "license": "MIT",
