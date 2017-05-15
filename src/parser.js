@@ -156,7 +156,9 @@ class ConfigParser {
     }
 
     static _convertRawBlueprintToBlueprint(raw: TRawBlueprint, instTable: InstancesTable, dependencies: Array<Dependency>, packages: Array<Package>): Blueprint {
-        const constructor = raw.$constructor || ((require(`${raw.typePath}/${raw.name}`): any): Function);
+        const constructor = !raw.mock
+            ? raw.$constructor || ((require(`${raw.typePath}/${raw.name}`): any): Function)
+            : null;
 
         return new Blueprint(instTable, {
             name: raw.name,
