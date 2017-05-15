@@ -2,7 +2,7 @@
 
 const assert = require('assert');
 
-const Factory = require('../src/factory');
+const Factory = require('../build/factory');
 
 describe('Factory', function () {
     it('Should create instances of described classes', function () {
@@ -21,7 +21,7 @@ describe('Factory', function () {
                             name: 'type2Component',
                             type: 'type_2'
                         }],
-                        constructor: function () {
+                        $constructor: function () {
                             this.isInstanceOf = () => 'type1Component';
                         }
                     }]
@@ -36,7 +36,7 @@ describe('Factory', function () {
                             name: 'type3Component',
                             type: 'type_3'
                         }],
-                        constructor: function () {
+                        $constructor: function () {
                             this.isInstanceOf = () => 'type2Component';
                         }
                     }]
@@ -51,7 +51,7 @@ describe('Factory', function () {
                             name: 'assert',
                             isNative: true
                         }],
-                        constructor: function (assert) {
+                        $constructor: function (assert) {
                             this.isInstanceOf = () => 'type3Component';
                             this.checkDependencies = () => assert.ok(assert);
                         }

@@ -33,7 +33,7 @@ class Blueprint {
             return Injector.mockBodyInjection(mock, components);
         }
 
-        const instance: Object = Injector.inject(this.options.constructor, components, `${this.options.deployType}-${this.options.injectType}`);
+        const instance: Object = Injector.inject(this.options.$constructor, components, `${this.options.deployType}-${this.options.injectType}`);
 
         this.instTable.set(this.options.name, this.options.type, instance);
 

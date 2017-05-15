@@ -18,7 +18,8 @@ describe('ConfigParser', function () {
                         dependencies: [{
                             name: 'type2Component',
                             type: 'type_2'
-                        }]
+                        }],
+                        $constructor: function () {}
                     }]
                 },
 
@@ -28,7 +29,8 @@ describe('ConfigParser', function () {
                         dependencies: [{
                             name: 'type3Component',
                             type: 'type_3'
-                        }]
+                        }],
+                        $constructor: function () {}
                     }]
                 },
 
@@ -38,7 +40,8 @@ describe('ConfigParser', function () {
                         packages: [{
                             name: 'assert',
                             isNative: true
-                        }]
+                        }],
+                        $constructor: function () {}
                     }]
                 }
             }

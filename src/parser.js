@@ -116,7 +116,7 @@ class ConfigParser {
                 typePath: typePath,
                 deployType: bp.deployType,
                 injectType: bp.injectType,
-                constructor: bp.constructor,
+                $constructor: bp.$constructor,
                 mock: bp.mock,
                 dependencies: bp.dependencies,
                 packages: bp.packages
@@ -156,6 +156,8 @@ class ConfigParser {
     }
 
     static _convertRawBlueprintToBlueprint(raw: TRawBlueprint, instTable: InstancesTable, dependencies: Array<Dependency>, packages: Array<Package>): Blueprint {
+        const constructor = raw.$constructor || ((require(`${raw.typePath}/${raw.name}`): any): Function);
+
         return new Blueprint(instTable, {
             name: raw.name,
             type: raw.type,
@@ -165,7 +167,7 @@ class ConfigParser {
             dependencies: dependencies,
             packages: packages,
 
-            constructor: raw.constructor || ((require(`${raw.typePath}/${raw.name}`): any): Function),
+            $constructor: constructor,
 
             mock: raw.mock
         });

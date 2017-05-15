@@ -14,7 +14,7 @@ export type TBlueprint = {
     dependencies: Array<Dependency>,
     packages: Array<Package>,
 
-    constructor: Function,
+    $constructor: Function,
 
     mock: ?Object
 }
@@ -69,7 +69,7 @@ export type TRawBlueprint = {
     typePath: string,
     deployType: string,
     injectType: string,
-    constructor: ?Function,
+    $constructor: ?Function,
     mock: ?Object,
     dependencies: Array<Object>,
     packages: Array<Object>
