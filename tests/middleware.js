@@ -2,6 +2,9 @@
 
 const assert = require('assert');
 
+const describe = require('mocha').describe;
+const it = require('mocha').it;
+
 const Middleware = require('../src/components/middleware');
 const InstancesTable = require('../src/tables/instances-table');
 const MiddlewareTable = require('../src/tables/middleware-table');

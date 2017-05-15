@@ -1,8 +1,9 @@
-/* @flow */
-
 "use strict";
 
 const assert = require('assert');
+
+const describe = require('mocha').describe;
+const it = require('mocha').it;
 
 const Blueprint = require('../src/blueprint');
 const BlueprintsTable = require('../src/tables/blueprints-table');

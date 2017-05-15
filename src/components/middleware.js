@@ -30,7 +30,7 @@ class Middleware implements IComponent {
     }
 
     isCorrectForUrl(url: string): boolean {
-        if (this.options.only instanceof Array) {
+        if (this.options.only && this.options.only.length) {
             // $FlowFixMe url should be an Object
             return this.options.only.includes(url);
         } else {

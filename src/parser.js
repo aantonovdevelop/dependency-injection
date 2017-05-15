@@ -47,7 +47,7 @@ class ConfigParser {
         return {blueprintsTable, instancesTable, middlewareTable, routesTable};
     }
 
-    static _convertRawMiddleware(rawMiddleware: Array<Object>, instTable: InstancesTable): Array<Middleware> {
+    static _convertRawMiddleware(rawMiddleware: Array<Object> = [], instTable: InstancesTable): Array<Middleware> {
         const middleware: Array<Middleware> = [];
 
         for (const mw: Object of rawMiddleware) {
@@ -68,7 +68,7 @@ class ConfigParser {
         return middleware;
     }
 
-    static _convertRawRoutes(rawRoutes: Array<Object>, router: Object, instTable: InstancesTable, mwTable: MiddlewareTable): Array<Route> {
+    static _convertRawRoutes(rawRoutes: Array<Object> = [], router: Object, instTable: InstancesTable, mwTable: MiddlewareTable): Array<Route> {
         const routes: Array<Route> = [];
 
         for (const route: Object of rawRoutes) {

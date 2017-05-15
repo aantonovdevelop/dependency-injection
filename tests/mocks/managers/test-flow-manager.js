@@ -10,7 +10,7 @@ class TestFlowManager {
     _testService: TestService;
 
     someFunction() {
-        return this._testService.getValue();
+        return this._testService.getValue('blahblah');
     }
 }
 
