@@ -22,7 +22,8 @@ const config = {
     },
     routers: {
         main: {
-            post: function () {}
+            post: function () {
+            }
         }
     }
 };

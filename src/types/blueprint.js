@@ -257,7 +257,7 @@ class ConfigParser {
 }
 
 class Formatter {
-    static toObject (dependencies: Array<TComponentInstance>): Object {
+    static toObject(dependencies: Array<TComponentInstance>): Object {
         let result = {};
 
         for (const dependency: TComponentInstance of dependencies) {
@@ -267,7 +267,7 @@ class Formatter {
         return result;
     }
 
-    static toArray (dependencies: Array<TComponentInstance>): Array<any> {
+    static toArray(dependencies: Array<TComponentInstance>): Array<any> {
         let result = [];
 
         for (const dependency: TComponentInstance of dependencies) {
@@ -279,11 +279,11 @@ class Formatter {
 }
 
 class Injector {
-    static constructorRestInjection (constructor: Function, components: Array<TComponentInstance>): Object {
+    static constructorRestInjection(constructor: Function, components: Array<TComponentInstance>): Object {
         return new constructor(...Formatter.toArray(components));
     }
 
-    static constructorObjectInjection (constructor: Function, components: Array<TComponentInstance>): Object {
+    static constructorObjectInjection(constructor: Function, components: Array<TComponentInstance>): Object {
         return new constructor(Formatter.toObject(components));
     }
 
@@ -346,14 +346,14 @@ class Route implements IComponent {
     middlewareTable: MiddlewareTable;
     router: Object;
 
-    constructor (router: Object, instTable: InstancesTable, middlewareTable: MiddlewareTable, options: TRoute) {
+    constructor(router: Object, instTable: InstancesTable, middlewareTable: MiddlewareTable, options: TRoute) {
         this.options = options;
         this.instTable = instTable;
         this.middlewareTable = middlewareTable;
         this.router = router;
     }
 
-    create (): Object|Function {
+    create(): Object | Function {
         const component: Object = this.instTable.get(this.options.func.compName, this.options.func.fromType);
 
         if (!component)
@@ -380,7 +380,7 @@ class Route implements IComponent {
         return this.router;
     }
 
-    getName (): string {
+    getName(): string {
         return `${this.options.method}_${this.options.url}`;
     }
 }
@@ -389,13 +389,13 @@ class Middleware implements IComponent {
     options: TMiddleware;
     instTable: InstancesTable;
 
-    constructor (instTable: InstancesTable, options: TMiddleware) {
+    constructor(instTable: InstancesTable, options: TMiddleware) {
         this.instTable = instTable;
         this.options = options;
     }
 
     create(): Function {
-        const middleware: Object|Function = (this.options.component.func)
+        const middleware: Object | Function = (this.options.component.func)
             ? this.instTable.get(this.options.component.name, this.options.component.type)[this.options.component.func]
             : this.instTable.get(this.options.component.name, this.options.component.type);
 
@@ -406,11 +406,11 @@ class Middleware implements IComponent {
         }
     }
 
-    getName () {
+    getName() {
         return this.options.name;
     }
 
-    isCorrectForUrl (url: string): boolean {
+    isCorrectForUrl(url: string): boolean {
         if (this.options.only instanceof Array) {
             // $FlowFixMe url should be an Object
             return this.options.only.includes(url);
@@ -425,12 +425,12 @@ class Blueprint {
     options: TBlueprint;
     instTable: InstancesTable;
 
-    constructor (instTable: InstancesTable, options: TBlueprint) {
+    constructor(instTable: InstancesTable, options: TBlueprint) {
         this.instTable = instTable;
         this.options = options;
     }
 
-    create (): Object {
+    create(): Object {
         if (this.instTable.has(this.options.name, this.options.type)) {
             return this.instTable.get(this.options.name, this.options.type);
         }
@@ -443,7 +443,7 @@ class Blueprint {
         if (this.options.mock) {
             this.instTable.set(this.options.name, this.options.type, this.options.mock);
 
-            const mock: Object =  ((this.options.mock: any): Object);
+            const mock: Object = ((this.options.mock: any): Object);
 
             return Injector.mockBodyInjection(mock, components);
         }
@@ -472,7 +472,7 @@ class Blueprint {
 }
 
 interface IComponent {
-    create(): Object|Function,
+    create(): Object | Function,
     getName(): string
 }
 
@@ -480,7 +480,7 @@ class Dependency implements IComponent {
     options: TDependency;
     bpTable: BlueprintsTable;
 
-    constructor (bpTable: BlueprintsTable, options: TDependency) {
+    constructor(bpTable: BlueprintsTable, options: TDependency) {
         this.bpTable = bpTable;
         this.options = options;
     }
@@ -489,11 +489,11 @@ class Dependency implements IComponent {
         return this.options.mock || this.getBlueprint().create();
     }
 
-    getBlueprint (): Blueprint {
+    getBlueprint(): Blueprint {
         return this.bpTable.get(this.options.name, this.options.type);
     }
 
-    getName (): string {
+    getName(): string {
         return toCamelCase(this.options.name);
     }
 }
@@ -501,11 +501,11 @@ class Dependency implements IComponent {
 class Package implements IComponent {
     options: TPackage;
 
-    constructor (options: TPackage) {
+    constructor(options: TPackage) {
         this.options = options;
     }
 
-    create (): any {
+    create(): any {
         if (this.options.mock) {
             return this.options.mock;
         }
@@ -521,7 +521,7 @@ class Package implements IComponent {
         return pkg;
     }
 
-    getName (): string {
+    getName(): string {
         return this.options.instanceName || toCamelCase(this.options.name);
     }
 }
@@ -529,11 +529,11 @@ class Package implements IComponent {
 class InstancesTable {
     table: Map<string, Object>;
 
-    constructor () {
+    constructor() {
         this.table = new Map();
     }
 
-    set (name: string, type: string, instance: Object|Function): void {
+    set(name: string, type: string, instance: Object | Function): void {
         if (!name) throw new Error(`Name of ${type} instance is undefined`);
         else if (!type) throw new Error(`Type of ${name} instance is undefined`);
         else if (!instance) throw new Error(`Instance of ${name} ${type} is undefined`);
@@ -541,11 +541,11 @@ class InstancesTable {
         this.table.set(name + type, instance);
     }
 
-    get (name: string, type: string): Object {
+    get(name: string, type: string): Object {
         return ((this.table.get(name + type): any): Object);
     }
 
-    has (name: string, type: string): boolean {
+    has(name: string, type: string): boolean {
         return this.table.has(name + type);
     }
 }
@@ -553,11 +553,11 @@ class InstancesTable {
 class BlueprintsTable {
     table: Map<string, Blueprint>;
 
-    constructor () {
+    constructor() {
         this.table = new Map();
     }
 
-    set (name: string, type: string, blueprint: Blueprint): void {
+    set(name: string, type: string, blueprint: Blueprint): void {
         if (!name) throw new Error(`Name of ${type} blueprint is undefined`);
         else if (!type) throw new Error(`Type of ${name} blueprint is undefined`);
         else if (!blueprint) throw new Error(`Blueprint of ${name} ${type} is undefined`);
@@ -565,7 +565,7 @@ class BlueprintsTable {
         this.table.set(name + type, blueprint);
     }
 
-    get (name: string, type: string): Blueprint {
+    get(name: string, type: string): Blueprint {
         return ((this.table.get(name + type): any): Blueprint);
     }
 
@@ -578,33 +578,33 @@ class BlueprintsTable {
 class MiddlewareTable {
     table: Map<string, Middleware>;
 
-    constructor () {
+    constructor() {
         this.table = new Map();
     }
 
-    set (name: string, middleware: Middleware): void {
+    set(name: string, middleware: Middleware): void {
         if (!name) throw new Error(`Name of middleware is undefined`);
 
         this.table.set(name, middleware);
     }
 
-    get (name: string): Middleware {
+    get(name: string): Middleware {
         return ((this.table.get(name): any): Middleware);
     }
 
-    getForUrl (url: string): Array<Middleware> {
+    getForUrl(url: string): Array<Middleware> {
         const middleware: Array<Middleware> = [];
 
         for (const mw: Middleware of this.table.values()) {
-            mw.isCorrectForUrl(url) ? middleware.push(mw): null;
+            mw.isCorrectForUrl(url) ? middleware.push(mw) : null;
         }
 
         return middleware;
     }
 
     // $FlowFixMe
-    [Symbol.iterator] () {
-        return  this.table.entries();
+    [Symbol.iterator]() {
+        return this.table.entries();
     }
 }
 
@@ -626,8 +626,8 @@ class RoutesTable {
     }
 
     // $FlowFixMe
-    [Symbol.iterator] () {
-        return  this.table.values();
+    [Symbol.iterator]() {
+        return this.table.values();
     }
 }
 
@@ -648,4 +648,15 @@ function toCamelCase(name: string): string {
     return result;
 }
 
-module.exports = {Blueprint, BlueprintsTable, Dependency, InstancesTable, Package, Injector, ConfigParser, Factory, Middleware, MiddlewareTable};
+module.exports = {
+    Blueprint,
+    BlueprintsTable,
+    Dependency,
+    InstancesTable,
+    Package,
+    Injector,
+    ConfigParser,
+    Factory,
+    Middleware,
+    MiddlewareTable
+};

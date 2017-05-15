@@ -2,7 +2,7 @@
 
 const assert = require('assert');
 
-const { ConfigParser } = require('../src/types/blueprint');
+const {ConfigParser} = require('../src/types/blueprint');
 
 describe('ConfigParser', function () {
     it('Should parse raw config', function () {

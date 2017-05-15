@@ -25,7 +25,8 @@ describe('Blueprints', function () {
                     this.dep = dep;
                     this.assert = assert;
                 }
-                func () {
+
+                func() {
                     this.assert.ok(true);
 
                     return this.dep.get() + 1;

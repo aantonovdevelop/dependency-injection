@@ -2,7 +2,7 @@
 
 const assert = require('assert');
 
-const { Factory } = require('../src/types/blueprint');
+const {Factory} = require('../src/types/blueprint');
 
 describe('Factory', function () {
     it('Should create instances of described classes', function () {
@@ -72,7 +72,10 @@ describe('Factory', function () {
             }]
         };
 
-        const factory = new Factory({get: function () {}});
+        const factory = new Factory({
+            get: function () {
+            }
+        });
         const instances = factory.create(config);
 
         assert.ok(instances);
