@@ -4,7 +4,11 @@
 
 const assert = require('assert');
 
-const {Blueprint, BlueprintsTable, Dependency, InstancesTable, Package} = require('../src/types/blueprint');
+const Blueprint = require('../src/blueprint');
+const BlueprintsTable = require('../src/tables/blueprints-table');
+const Dependency = require('../src/components/dependency');
+const InstancesTable = require('../src/tables/instances-table');
+const Package = require('../src/components/package');
 
 describe('Blueprints', function () {
     let mainBlueprint: Blueprint,

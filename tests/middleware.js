@@ -2,7 +2,9 @@
 
 const assert = require('assert');
 
-const {Middleware, InstancesTable, MiddlewareTable} = require('../src/types/blueprint');
+const Middleware = require('../src/components/middleware');
+const InstancesTable = require('../src/tables/instances-table');
+const MiddlewareTable = require('../src/tables/middleware-table');
 
 describe('Middleware', function () {
     let mw1, mw2, mw3 = null;

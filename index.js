@@ -1,5 +1,5 @@
 "use strict";
 
-const injector = require('./injector');
+const Factory = require('./src/factory');
 
-module.exports = injector;
+module.exports = Factory;

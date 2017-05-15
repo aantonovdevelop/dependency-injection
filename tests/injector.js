@@ -2,7 +2,7 @@
 
 const assert = require('assert');
 
-const {Injector} = require('../src/types/blueprint');
+const Injector = require('../src/injector');
 
 describe('Injector tests', function () {
     it('Should inject rest parameters into constructor', function (done) {

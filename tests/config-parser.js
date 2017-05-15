@@ -2,7 +2,7 @@
 
 const assert = require('assert');
 
-const {ConfigParser} = require('../src/types/blueprint');
+const ConfigParser = require('../src/parser');
 
 describe('ConfigParser', function () {
     it('Should parse raw config', function () {
@@ -47,7 +47,7 @@ describe('ConfigParser', function () {
         let result = ConfigParser.parse(config);
 
         assert.ok(result.blueprintsTable);
-        assert.ok(result.instanceTable);
+        assert.ok(result.instancesTable);
 
         assert.ok(result.blueprintsTable.get('type1Component', 'type_1'));
         assert.ok(result.blueprintsTable.get('type2Component', 'type_2'));
