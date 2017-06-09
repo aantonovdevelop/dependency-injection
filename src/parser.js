@@ -148,7 +148,8 @@ class ConfigParser {
             dependencies.push(new Dependency(bpTable, {
                 name: rawDependency.name,
                 type: rawDependency.type,
-                mock: rawDependency.mock
+                mock: rawDependency.mock,
+                instanceName: rawDependency.instanceName
             }));
         }
 
@@ -158,7 +159,7 @@ class ConfigParser {
     static _convertRawBlueprintToBlueprint(raw: TRawBlueprint, instTable: InstancesTable, dependencies: Array<Dependency>, packages: Array<Package>): Blueprint {
         const constructor = !raw.mock
             ? raw.$constructor || ((require(`${raw.typePath}/${raw.name}`): any): Function)
-            : null;
+            : function () {};
 
         return new Blueprint(instTable, {
             name: raw.name,

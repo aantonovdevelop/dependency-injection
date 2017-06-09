@@ -25,7 +25,7 @@ class Dependency implements IComponent {
     }
 
     getName(): string {
-        return toCamelCase(this.options.name);
+        return this.options.instanceName || toCamelCase(this.options.name);
     }
 }
 

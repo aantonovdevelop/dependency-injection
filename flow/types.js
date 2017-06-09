@@ -22,7 +22,8 @@ export type TBlueprint = {
 export type TDependency = {
     name: string,
     type: string,
-    mock: ?Object
+    mock: ?Object,
+    instanceName: ?string
 }
 
 export type TMiddleware = {
