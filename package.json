@@ -6,7 +6,7 @@
   "scripts": {
     "test": "node_modules/mocha/bin/mocha --recursive tests/",
     "flow": "flow",
-    "prepublish": "babel src/ -d build/"
+    "prepublish": "node_modules/babel-cli/bin/babel.js src/ -d build/"
   },
   "author": "Artem Antonov <aantonov.develop@gmail.com>",
   "license": "MIT",
