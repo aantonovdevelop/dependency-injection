@@ -69,20 +69,20 @@ const options = {
                     }]
                 }
 
-                //Привязываем роуты к функциям контроллера
             }]
         }
     },
 
+    //Привязываем роуты к функциям контроллера
     routes: [{
         //Тип запроса
-        type: 'post',
+        method: 'post',
 
         //URL запроса
         url: '/some',
 
         //Метод контроллера который будет привязан к роуту
-        method: 'controllers.test-controller.someFunction'
+        func: 'controllers.test-controller.someFunction'
     }]
 }
 

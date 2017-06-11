@@ -44,6 +44,21 @@ describe('ConfigParser', function () {
                         $constructor: function () {}
                     }]
                 }
+            },
+
+            routes: [{
+                method: 'post',
+                url: '/some/url',
+                func: 'type_1.type1Component.somePost'
+            }, {
+                method: 'get',
+                url: '/some/url',
+                func: 'type_1.type1Component.someGet'
+            }],
+
+            router: {
+                get() {},
+                post() {}
             }
         };
 
@@ -51,9 +66,17 @@ describe('ConfigParser', function () {
 
         assert.ok(result.blueprintsTable);
         assert.ok(result.instancesTable);
+        assert.ok(result.middlewareTable);
+        assert.ok(result.routesTable);
 
         assert.ok(result.blueprintsTable.get('type1Component', 'type_1'));
         assert.ok(result.blueprintsTable.get('type2Component', 'type_2'));
         assert.ok(result.blueprintsTable.get('type3Component', 'type_3'));
+
+        const fRoute = result.routesTable.get('post_/some/url');
+        const sRoute = result.routesTable.get('get_/some/url');
+
+        assert.ok(fRoute);
+        assert.ok(sRoute);
     });
 });
